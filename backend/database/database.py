@@ -101,5 +101,14 @@ def delete_user(user_id: int):
     conn.close()
     return f"User with ID {user_id} was successfully deleted."
 
+
+def delete_session(session_id: str):
+    """Deletes a specific chat session from the database."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM chat_sessions WHERE session_id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
 # Initialize the database when this file is imported
 init_db()

@@ -6,8 +6,9 @@ import queue
 import json
 from agent_folder.manager import MANAGER_TOOLS_SCHEMA, get_manager_tools 
 from agent_folder.agent import run_agent
-from database.database import load_history, save_history
+from database.database import load_history, save_history, delete_session
 import threading
+import time
 
 app = FastAPI()
 
@@ -25,19 +26,25 @@ app.add_middleware(
 approval_events = {}
 approval_results = {} # { "session_id": True/False }
 
+
 @app.get("/api/chat")
 async def chat_endpoint(prompt: str, session_id: str):
     # Create a thread-safe queue to hold our messages
     message_queue = queue.Queue()
 
+        # Task emitter for the left-side execution panel
+    def agent_task_emitter(task_event):
+        # Send a special JSON payload to the frontend
+        message_queue.put({"type": "task_event", "data": task_event})
+
     # Logger function passed to the agent
     def agent_logger(message):
-        message_queue.put(str(message))
+        message_queue.put({"type": "text", "data": str(message)})
 
     # --- NEW: HITL Callback ---
     def approval_callback(tool_name, tool_args):
         # 1. Tell the frontend we need approval
-        message_queue.put(f"[WAITING_FOR_APPROVAL] Tool: {tool_name}, Args: {json.dumps(tool_args)}")
+        message_queue.put({"type": "text", "data": f"[WAITING_FOR_APPROVAL] Tool: {tool_name}, Args: {json.dumps(tool_args)}"})
         
         # 2. Create an Event and store it
         event = threading.Event()
@@ -59,8 +66,11 @@ async def chat_endpoint(prompt: str, session_id: str):
 
     # Background worker running the synchronous agent
     def run_agent_task():
+        start_time = time.time()
+        success = True
+
         try:
-            message_queue.put("[System] Agent thinking...")
+            message_queue.put({"type": "text", "data": "[System] Agent thinking..."})
 
             # 1. LOAD HISTORY FROM DATABASE
             history = load_history(session_id)
@@ -69,21 +79,32 @@ async def chat_endpoint(prompt: str, session_id: str):
                 prompt,
                 history,
                 MANAGER_TOOLS_SCHEMA,
-                get_manager_tools(agent_logger, approval_callback=approval_callback),
-                use_guardrails=False,
+                get_manager_tools(agent_logger, approval_callback=approval_callback, task_emitter=agent_task_emitter),
+                use_guardrails=True,
                 logger=agent_logger,
-                approval_callback=approval_callback  # <--- FIXED: Added this
+                approval_callback=approval_callback, 
+                task_emitter=agent_task_emitter
             )
 
             # 3. SAVE UPDATED HISTORY TO DATABASE
             save_history(session_id, updated_history)
 
-            message_queue.put(f"[Final Answer] {answer}")
+            # Calculate metrics
+            elapsed_ms = int((time.time() - start_time) * 1000)
+
+            message_queue.put({"type": "text", "data": f"[Final Answer] {answer}"})
+
+            # Send the metric event to the frontend
+            message_queue.put({
+                "type": "metrics", 
+                "data": {"latency_ms": elapsed_ms, "success": success}
+            })
             
         except Exception as e:
-            message_queue.put(f"[Error] {e}")
+            message_queue.put({"type": "text", "data": f"[Error] {e}"})
         finally:
             message_queue.put(None)  # Sentinel to end the stream
+            success = False
 
     # Start the agent thread in the background
     asyncio.create_task(asyncio.to_thread(run_agent_task))
@@ -127,6 +148,8 @@ async def get_history(session_id: str):
             
     return {"messages": chat_messages}
 
+
+
 @app.post("/api/approve")
 async def approve_action(request: Request):
     data = await request.json()
@@ -141,3 +164,21 @@ async def approve_action(request: Request):
         return {"status": "success"}
     
     return {"status": "error", "message": "No pending approval for this session"}
+
+
+
+@app.delete("/api/memory/{session_id}")
+async def clear_memory(session_id: str):
+    delete_session(session_id)
+    return {"status": "success", "message": "Memory cleared"}
+
+
+@app.get("/api/status")
+async def get_status():
+    # In a real app, you might query the cloud provider here. 
+    # For now, we hardcode it to match your screenshot.
+    return {
+        "status": "active",
+        "region": "Ghana-Accra",
+        "model": "openai/gpt-oss-20b"
+    }

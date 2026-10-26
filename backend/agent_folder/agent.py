@@ -4,15 +4,18 @@ from agent_folder.guardrails import is_prompt_injection, detect_math, did_use_ma
 import json
 
 system_input = """
-You are an AI assistant. 
-Before you call a tool, you must write out your reasoning in the 'content' field using the format:
+You are an AI orchestrator assistant.
+You must ALWAYS use the available tools to perform calculations, look up weather, query the database, or search policy documents. 
+NEVER do arithmetic or calculations in your head—always call the appropriate tool.
+
+Before you call a tool, write out your reasoning:
 Thought: [Your reasoning]
 
-Then, use the provided tools to take the action. 
-Once you have the final answer, write:
+Once you have the final answer from the tools, write:
 Thought: I now know the final answer.
 Final Answer: [Your answer]
 """
+
 
 DANGEROUS_TOOLS = ["delete_user", "send_email"]
 
@@ -22,14 +25,19 @@ def run_agent(
      available_tools, 
      tool_functions, 
      system_input=system_input, 
-     maxstep=80, 
+     maxstep=10, 
      use_guardrails=True, 
      logger=print,
-     approval_callback=None
+     approval_callback=None,
+     task_emitter=None
      ):
 
     if not messages:
         messages = [{"role": "system", "content": system_input}] 
+    elif isinstance(messages[0], dict) and messages[0].get("role") == "system":
+        messages[0]["content"] = system_input
+    else:
+        messages.insert(0, {"role": "system", "content": system_input})
  
     #checks input guardrails
     if is_prompt_injection(user_input):
@@ -44,7 +52,7 @@ def run_agent(
     for i in range(maxstep):
         try:
             response = client.chat.completions.create(
-                model="qwen/qwen3.8-27b",
+                model="openai/gpt-oss-20b",
                 messages=messages,
                 tools=available_tools
             )
@@ -68,7 +76,7 @@ def run_agent(
 
                     messages.append({
                         "role":"user",
-                        "content":"You did arithmetic without calling a tool. You must call add, multiply, or substraction. Retry."
+                        "content":"You did arithmetic without calling a tool. You must call the math tool (e.g. ask_math_agent or add). Do NOT calculate in your head. Retry."
                     })
                     continue # Reject the answer, force a retry
 
@@ -119,9 +127,16 @@ def run_agent(
             try:
                 logger(f"[step {i}] calling {tool_name}({tool_args})")
 
+                if task_emitter:
+                    task_emitter({"status": "running", "tool": tool_name, "args": tool_args})
+
                 result = tool_functions[tool_name](**tool_args)
                 
                 logger(f"[step {i}] -> {result}")
+
+                if task_emitter:
+                    task_emitter({"status": "completed", "tool": tool_name, "result": str(result)})
+
             except Exception as e:
                 result = f"Error {e}"
             

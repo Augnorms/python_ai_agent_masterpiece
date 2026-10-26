@@ -1,31 +1,47 @@
 from agent_folder.client import client
 
 
-MATH_TOOLS = {"add", "multiply", "substraction"}
+MATH_TOOLS = {"add", "multiply", "substraction", "ask_math_agent"}
 MATH_WORDS = ["plus", "minus", "times", "multiply", "add", "subtract",
-              "divide", "sum", "total", "+", "-", "*", "/"]
+              "divide", "sum", "total", "+", "-", "*", "/", "×", "÷"]
 PROMPT_INPUTS = ["ignore previous", "system prompt", "you are now", "override"]
 
 
 
 def detect_math(user_input):
     """Guardrail to enforce usage of math functions"""
-    words = user_input.lower().replace("?", "").replace(",", "").split()
+    text = user_input.lower()
+    # Check for math operators even if written without spaces (e.g. 10+10)
+    if any(op in text for op in ["+", "-", "*", "/", "×", "÷"]):
+        return True
+    words = text.replace("?", "").replace(",", "").split()
     return any(word in MATH_WORDS for word in words)
 
+
+
 def did_use_math_previously(messages):
+    # Look through the entire history
     for msg in messages:
-       
-        if getattr(msg, "tool_calls", None):
-            if any(call.function.name in MATH_TOOLS for call in msg.tool_calls):
-                return True
+        # Check if it's an assistant message with tool calls
+        tool_calls = getattr(msg, "tool_calls", None) or (msg.get("tool_calls") if isinstance(msg, dict) else None)
+        
+        if tool_calls:
+            for call in tool_calls:
+                # Handle Pydantic object or dict
+                name = call.function.name if hasattr(call, "function") else call["function"]["name"]
+                if name in MATH_TOOLS:
+                    return True
     return False
+
+
 
 def is_prompt_injection(user_input):
     text  = user_input.lower()
     if any(phrase in text for phrase in PROMPT_INPUTS):
         return True
     return False
+
+    
 
 def judge_tool_call(user_input, tool_name, tool_args):
     """ function call to judge the tool call """
