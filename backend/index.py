@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import asyncio
@@ -9,6 +9,8 @@ from agent_folder.agent import run_agent
 from database.database import load_history, save_history, delete_session
 import threading
 import time
+from storage import upload_file_to_s3, list_files_in_s3
+from ingest_rag_service import process_and_ingest_file
 
 app = FastAPI()
 
@@ -182,3 +184,30 @@ async def get_status():
         "region": "Ghana-Accra",
         "model": "openai/gpt-oss-20b"
     }
+
+
+@app.post("/api/documents/upload")
+async def upload_document(file: UploadFile = File(...)):
+    try:
+        # 1. Read the file content
+        file_content = await file.read()
+        
+        # 2. Upload to MinIO S3
+        result = upload_file_to_s3(file_content, file.filename)
+        
+        # 3. (Next step) We will process the file for RAG here
+        rag_result = process_and_ingest_file(file_content, file.filename)
+        
+        return {"status": "success", "message": f"{result} || {rag_result}", "filename": file.filename}
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/documents")
+async def get_documents():
+    try:
+        files = list_files_in_s3()
+        return {"status": "success", "documents": files}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

@@ -2,10 +2,11 @@ from openai.resources.beta.threads import messages
 from agent_folder.client import client
 from agent_folder.guardrails import is_prompt_injection, detect_math, did_use_math_previously
 import json
+import time
 
 system_input = """
 You are an AI orchestrator assistant.
-You must ALWAYS use the available tools to perform calculations, look up weather, query the database, or search policy documents. 
+You must ALWAYS use the available tools to perform calculations, look up weather, query user database records, or search company knowledge base documents (for company documentation, service plans, pricing, business plans, or employee policies). 
 NEVER do arithmetic or calculations in your head—always call the appropriate tool.
 
 Before you call a tool, write out your reasoning:
@@ -130,12 +131,16 @@ def run_agent(
                 if task_emitter:
                     task_emitter({"status": "running", "tool": tool_name, "args": tool_args})
 
+                start_time = time.time()    
+
                 result = tool_functions[tool_name](**tool_args)
+
+                duration_ms = int((time.time() - start_time) * 1000)
                 
                 logger(f"[step {i}] -> {result}")
 
                 if task_emitter:
-                    task_emitter({"status": "completed", "tool": tool_name, "result": str(result)})
+                    task_emitter({"status": "completed", "tool": tool_name, "result": str(result), "duration_ms": duration_ms})
 
             except Exception as e:
                 result = f"Error {e}"

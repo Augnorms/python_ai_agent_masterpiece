@@ -77,7 +77,10 @@
 
             <div class="task-card-body">
               <h4 class="task-name">{{ task.name }}</h4>
-              <p class="task-desc">{{ task.description }}</p>
+              <p class="task-desc">
+                <span class="args-badge">Args:</span>
+                <span class="args-text">{{ formatTaskDesc(task.description) }}</span>
+              </p>
               
               <!-- Dedicated Output Box for Detailed/Long Results -->
               <div v-if="task.outputPreview && task.outputPreview !== 'Pending' && task.outputPreview.length > 22" class="task-output-box">
@@ -93,7 +96,8 @@
                   <line x1="8" y1="21" x2="16" y2="21" />
                   <line x1="12" y1="17" x2="12" y2="21" />
                 </svg>
-                {{ task.tool }}
+                <span class="tool-label">Tool:</span>
+                <span class="tool-name">{{ task.tool }}</span>
               </span>
               <span class="exit-code">EXIT CODE: 0</span>
             </div>
@@ -104,11 +108,11 @@
         <div class="timeline-footer">
           <div class="timeline-meta">
             <span class="meta-label">Execution Timeline & Health</span>
-            <span class="meta-val">Avg: 0.16s / task</span>
+            <span class="meta-val">Avg: {{ averageDuration }} / task</span>
           </div>
           <div class="sparkline-wrapper">
             <svg class="sparkline" viewBox="0 0 300 24" fill="none">
-              <path d="M0 16 Q 40 8, 80 14 T 160 12 T 240 6 T 300 12" stroke="#00e5ff" stroke-width="1.8" />
+              <path :d="sparklinePath" stroke="#00e5ff" stroke-width="1.8" stroke-linecap="round" />
             </svg>
           </div>
         </div>
@@ -282,7 +286,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed  } from 'vue'
 import HumanInTheLoopModal from '../components/HumanInTheLoopModal.vue'
 
 const userInput = ref('')
@@ -294,7 +298,8 @@ const pendingApproval = ref(null)
 const chatBoxRef = ref(null)
 const taskLifecycle = ref([])
 const latency = ref(0)
-const successRate = ref(100)
+const successRate = ref(0)
+const taskDurations = ref([])
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -325,6 +330,39 @@ onMounted(async () => {
   }
 })
 
+const averageDuration = computed(() => {
+  if (taskDurations.value.length === 0) return "0.00s"
+  const sum = taskDurations.value.reduce((a, b) => a + b, 0)
+  const avgMs = sum / taskDurations.value.length
+  return (avgMs / 1000).toFixed(2) + "s"
+})
+
+const sparklinePath = computed(() => {
+  if (taskDurations.value.length < 2) {
+    return 'M0 16 Q 40 10, 80 14 T 160 12 T 240 8 T 300 14'
+  }
+  const durations = taskDurations.value
+  const max = Math.max(...durations, 300)
+  const min = Math.min(...durations, 50)
+  const range = max - min || 1
+  const step = 300 / (durations.length - 1)
+
+  const points = durations.map((d, i) => {
+    const x = Math.round(i * step)
+    const y = Math.round(20 - ((d - min) / range) * 14)
+    return { x, y }
+  })
+
+  let path = `M ${points[0].x} ${points[0].y}`
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1]
+    const curr = points[i]
+    const midX = (prev.x + curr.x) / 2
+    path += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`
+  }
+  return path
+})
+
 const clearMemory = async () => {
   if (isClearingMemory.value) return
   isClearingMemory.value = true
@@ -345,6 +383,7 @@ const clearMemory = async () => {
     sessionId.value = newId
     messages.value = []
     taskLifecycle.value = []
+    taskDurations.value = []
     isClearingMemory.value = false
   }
 }
@@ -405,6 +444,11 @@ const formatBadgeOutput = (output) => {
   if (!output || output === 'Pending') return 'Pending'
   if (output.length <= 20) return `Output: ${output}`
   return `Output: ${output.slice(0, 16)}...`
+}
+
+const formatTaskDesc = (desc) => {
+  if (!desc) return ''
+  return desc.startsWith('Args:') ? desc.replace(/^Args:\s*/, '') : desc
 }
 
 const sendMessage = async () => {
@@ -470,7 +514,11 @@ const sendMessage = async () => {
               const taskIndex = taskLifecycle.value.findLastIndex(t => t.tool === taskData.tool && t.outputPreview === 'Pending')
               if (taskIndex !== -1) {
                 taskLifecycle.value[taskIndex].outputPreview = taskData.result
-                taskLifecycle.value[taskIndex].duration = '0.15s'
+                const durMs = Number(taskData.duration_ms) || 150
+                taskLifecycle.value[taskIndex].duration = (durMs / 1000).toFixed(2) + 's'
+
+                // Save the duration for the sparkline
+                taskDurations.value.push(durMs) 
               }
             }
           } 
@@ -773,7 +821,11 @@ const sendMessage = async () => {
 }
 
 .task-id {
-  color: var(--text-dim);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
   font-family: var(--font-mono);
   font-weight: 700;
   white-space: nowrap;
@@ -830,8 +882,22 @@ const sendMessage = async () => {
 
 .task-desc {
   font-size: 11px;
-  color: var(--text-muted);
+  line-height: 1.45;
   word-break: break-all;
+}
+
+.args-badge {
+  color: #f59e0b;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  margin-right: 4px;
+}
+
+.args-text {
+  color: #cbd5e1;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
 }
 
 .task-output-box {
@@ -874,18 +940,26 @@ const sendMessage = async () => {
 .tool-tag {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: var(--text-dim);
+  gap: 5px;
   font-family: var(--font-mono);
+  font-size: 10.5px;
 }
 .tool-tag svg {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   color: var(--primary-cyan);
+}
+.tool-label {
+  color: var(--primary-cyan);
+  font-weight: 700;
+}
+.tool-name {
+  color: #f1f5f9;
+  font-weight: 600;
 }
 
 .exit-code {
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: var(--font-mono);
 }
 
@@ -897,9 +971,18 @@ const sendMessage = async () => {
 .timeline-meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 10px;
-  color: var(--text-dim);
   margin-bottom: 6px;
+}
+.meta-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.meta-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--primary-cyan);
 }
 .sparkline-wrapper {
   height: 24px;
@@ -1128,10 +1211,12 @@ const sendMessage = async () => {
   color: var(--primary-cyan);
 }
 .chip-label {
-  color: var(--text-dim);
+  color: var(--primary-cyan);
+  font-weight: 700;
 }
 .chip-val {
-  color: #38bdf8;
+  color: #f1f5f9;
+  font-weight: 600;
 }
 
 .final-answer-box {

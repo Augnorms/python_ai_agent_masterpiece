@@ -141,6 +141,15 @@ a {
   background: #f8fafc !important;
   border-color: #e2e8f0 !important;
 }
+[data-theme="light"] .meta-label {
+  color: #475569 !important;
+}
+[data-theme="light"] .meta-val {
+  color: #0284c7 !important;
+}
+[data-theme="light"] .sparkline path {
+  stroke: #0284c7 !important;
+}
 [data-theme="light"] .latency-pill {
   background: #ffffff !important;
   border-color: #cbd5e1 !important;
@@ -286,4 +295,27 @@ a {
 }
 [data-theme="light"] .output-box-label {
   color: #0d9488 !important;
+}
+[data-theme="light"] .task-id {
+  color: #0369a1 !important;
+  background: #e0f2fe !important;
+  border-color: #bae6fd !important;
+}
+[data-theme="light"] .args-badge {
+  color: #d97706 !important;
+}
+[data-theme="light"] .args-text {
+  color: #1e293b !important;
+}
+[data-theme="light"] .tool-label {
+  color: #0284c7 !important;
+}
+[data-theme="light"] .tool-name {
+  color: #0f172a !important;
+}
+[data-theme="light"] .chip-label {
+  color: #0284c7 !important;
+}
+[data-theme="light"] .chip-val {
+  color: #0f172a !important;
 }

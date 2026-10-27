@@ -134,11 +134,11 @@ RAG_TOOL_SCHEMA = [
         "type": "function",
         "function": {
             "name": "search_company_docs",
-            "description": "Search the company policy documents for rules about time off, remote work, and sick leave.",
+            "description": "Search the company knowledge base, uploaded documents, policies, service plans, pricing, products, and rules in ChromaDB.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "The search query"}
+                    "query": {"type": "string", "description": "The search query or keywords to look up in company documents"}
                 },
                 "required": ["query"]
             }
@@ -187,7 +187,7 @@ def send_email(to_address: str, subject: str, body: str):
 
 
 def search_company_docs(query: str):
-    """Searches the company policy documents for relevant information."""
+    """Searches the company policy documents and knowledge base for relevant information."""
 
 
     try:
@@ -196,15 +196,15 @@ def search_company_docs(query: str):
         
         results = collection.query(
             query_embeddings=[query_embedding],
-            n_results=2
+            n_results=6
         )
 
-                # 4. Format the result
+        # 4. Format the result
         if not results['documents'][0]:
             return "No relevant documents found."
             
         formatted_results = "\n---\n".join(results['documents'][0])
-        return f"Found these relevant sections in the policy:\n\n{formatted_results}"
+        return f"Found these relevant sections in the company documents:\n\n{formatted_results}"
         
     except Exception as e:
         raise ValueError(f"Failed to search docs: {str(e)}")

@@ -65,7 +65,7 @@ MANAGER_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "ask_database_agent",
-            "description": "Ask the database agent to perform database queries on the database",
+            "description": "Ask the database agent questions specifically about user accounts, employee profiles, or user records in the SQL database (e.g. list users, delete user).",
             "parameters": {
                 "type": "object",
                 "properties":{
@@ -93,11 +93,11 @@ MANAGER_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "ask_rag_agent",
-            "description": "Ask the HR policy agent questions about company rules, time off, remote work, or sick leave.",
+            "description": "Ask the Knowledge Base / RAG agent questions about company documentation, uploaded files, products, service plans, pricing, business plans, rules, or employee policies.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "question": {"type": "string", "description": "The HR policy question to ask"}
+                    "question": {"type": "string", "description": "The question to search company documentation and knowledge base for"}
                 },
                 "required": ["question"]
             }
