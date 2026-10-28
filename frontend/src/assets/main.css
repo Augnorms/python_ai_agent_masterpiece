@@ -59,6 +59,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-size: 12px !important
 }
 
 html, body {
@@ -232,6 +233,18 @@ a {
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
 }
+[data-theme="light"] .btn-reset-danger {
+  background: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+[data-theme="light"] .btn-reset-danger svg {
+  color: #ffffff !important;
+}
+[data-theme="light"] .btn-reset-danger:hover:not(:disabled) {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+}
 [data-theme="light"] .header-icon-btn {
   border-color: #cbd5e1;
   color: #64748b;
@@ -268,6 +281,15 @@ a {
 [data-theme="light"] .hitl-footer {
   background: #f8fafc !important;
   border-top-color: #e2e8f0 !important;
+}
+[data-theme="light"] .metric-tag-empty {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1;
+}
+[data-theme="light"] .metric-tag-synced {
+  background: rgba(5, 150, 105, 0.12) !important;
+  color: #059669 !important;
 }
 [data-theme="light"] .main-title {
   color: #0f172a !important;

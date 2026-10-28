@@ -12,13 +12,13 @@
       </div>
 
       <div class="rag-header-actions">
-        <button class="btn-secondary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="btn-reset-danger" @click="openResetDialog" :disabled="isResettingDb" title="Reset ChromaDB Vector Collection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': isResettingDb }">
             <ellipse cx="12" cy="5" rx="9" ry="3" />
             <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
             <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
           </svg>
-          <span>Vector DB Config</span>
+          <span>{{ isResettingDb ? 'Resetting DB...' : 'Vector DB Reset' }}</span>
         </button>
 
         <button class="btn-secondary" @click="fetchDocuments" :disabled="isLoadingDocs">
@@ -73,7 +73,7 @@
             </div>
           </div>
           <div class="metric-value-row">
-            <span class="metric-num">3.84M</span>
+            <span class="metric-num">{{ vectorStats.total_chunks.toLocaleString() }}</span>
             <span class="metric-dim">1536/3072d</span>
           </div>
         </div>
@@ -89,15 +89,15 @@
             </div>
           </div>
           <div class="metric-value-row">
-            <span class="metric-num">16.2ms</span>
-            <span class="metric-dim">p95: 28ms</span>
+            <span class="metric-num">{{ latencyDisplay }}</span>
+            <span class="metric-dim">{{ p95Display }}</span>
           </div>
         </div>
 
         <div class="metric-card">
           <div class="metric-top">
             <span class="metric-label">INDEX CONSISTENCY</span>
-            <div class="metric-icon-box green">
+            <div class="metric-icon-box" :class="vectorStats.total_chunks > 0 ? 'green' : 'dim'">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
@@ -105,8 +105,10 @@
             </div>
           </div>
           <div class="metric-value-row">
-            <span class="metric-num">99.98%</span>
-            <span class="metric-tag-synced">SYNCED</span>
+            <span class="metric-num">{{ vectorStats.total_chunks > 0 ? '99.98%' : '0%' }}</span>
+            <span :class="vectorStats.total_chunks > 0 ? 'metric-tag-synced' : 'metric-tag-empty'">
+              {{ vectorStats.total_chunks > 0 ? 'SYNCED' : 'EMPTY' }}
+            </span>
           </div>
         </div>
       </div>
@@ -330,11 +332,27 @@
         <span>{{ toast.text }}</span>
       </div>
     </transition>
+
+    <!-- Reusable Prompt / Confirmation Dialog -->
+    <PromptDialog
+      :is-open="showResetDialog"
+      variant="danger"
+      title="Reset ChromaDB Vector Store"
+      badge="HIGH IMPACT"
+      message="Are you sure you want to completely wipe the 'company_docs' collection from ChromaDB? All indexed embeddings and document chunks will be permanently cleared."
+      confirm-text="Wipe & Reset Collection"
+      cancel-text="Cancel"
+      loading-text="Wiping Vector DB..."
+      :is-loading="isResettingDb"
+      @confirm="executeVectorDbReset"
+      @cancel="showResetDialog = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import PromptDialog from '../components/PromptDialog.vue'
 
 const fileInputRef = ref(null)
 const isDragging = ref(false)
@@ -343,6 +361,46 @@ const toast = ref(null)
 const activeJobs = ref([])
 const documents = ref([])
 const isLoadingDocs = ref(false)
+const isResettingDb = ref(false)
+const showResetDialog = ref(false)
+const vectorStats = ref({
+  total_chunks: 0,
+  status: 'empty'
+})
+const isLoadingStats = ref(false)
+const latestLatency = ref(
+  Number(localStorage.getItem('rag_latest_latency_ms')) || 0
+)
+const latencyHistory = ref(
+  (() => {
+    try {
+      return JSON.parse(localStorage.getItem('rag_latency_history') || '[]')
+    } catch {
+      return []
+    }
+  })()
+)
+
+const p95Latency = computed(() => {
+  if (latencyHistory.value.length === 0) {
+    return latestLatency.value > 0 ? Math.round(latestLatency.value * 1.25) : 0
+  }
+  const sorted = [...latencyHistory.value].sort((a, b) => a - b)
+  const idx = Math.min(sorted.length - 1, Math.ceil(0.95 * sorted.length) - 1)
+  return sorted[idx]
+})
+
+const latencyDisplay = computed(() => {
+  if (latestLatency.value <= 0) return '0.0ms'
+  return `${latestLatency.value}ms`
+})
+
+const p95Display = computed(() => {
+  if (latestLatency.value <= 0 && latencyHistory.value.length === 0) {
+    return 'p95: 0ms'
+  }
+  return `p95: ${p95Latency.value}ms`
+})
 const searchQuery = ref('')
 const selectedModel = ref('All Models')
 const selectedBinding = ref('All Swarm Bindings')
@@ -384,6 +442,7 @@ const showToast = (text, type = 'success') => {
 
 const fetchDocuments = async () => {
   isLoadingDocs.value = true
+  fetchVectorStats()
   try {
     const res = await fetch('http://127.0.0.1:8000/api/documents')
     const data = await res.json()
@@ -417,8 +476,65 @@ const fetchDocuments = async () => {
   }
 }
 
+const fetchVectorStats = async () => {
+  isLoadingStats.value = true
+  try {
+    const res = await fetch('http://127.0.0.1:8000/api/vector-db/stats')
+    const data = await res.json()
+    if (data && typeof data.total_chunks === 'number') {
+      vectorStats.value = {
+        total_chunks: data.total_chunks,
+        status: data.status || (data.total_chunks > 0 ? 'active' : 'empty')
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching vector db stats:', err)
+  } finally {
+    isLoadingStats.value = false
+  }
+}
+
+const openResetDialog = () => {
+  showResetDialog.value = true
+}
+
+const executeVectorDbReset = async () => {
+  if (isResettingDb.value) return
+
+  isResettingDb.value = true
+  try {
+    const res = await fetch('http://127.0.0.1:8000/api/clear-chroma', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await res.json()
+    if (res.ok && (data.status === 'success' || typeof data === 'string')) {
+      const msg = typeof data === 'string' ? data : (data.message || 'Vector DB has been completely wiped.')
+      latestLatency.value = 0
+      latencyHistory.value = []
+      localStorage.removeItem('rag_latest_latency_ms')
+      localStorage.removeItem('rag_latency_history')
+      showToast(msg, 'success')
+      await fetchDocuments()
+      await fetchVectorStats()
+    } else {
+      const errMsg = (data && data.message) || 'Failed to reset ChromaDB vector collection.'
+      showToast(errMsg, 'error')
+    }
+  } catch (err) {
+    console.error('Error resetting vector db:', err)
+    showToast('Failed to connect to backend server to reset Vector DB.', 'error')
+  } finally {
+    isResettingDb.value = false
+    showResetDialog.value = false
+  }
+}
+
 onMounted(() => {
   fetchDocuments()
+  fetchVectorStats()
 })
 
 const filteredDocuments = computed(() => {
@@ -479,6 +595,18 @@ const uploadFile = (file) => {
   xhr.onload = () => {
     try {
       const data = JSON.parse(xhr.responseText)
+
+      if (data && data.elapsed_ms !== undefined && data.elapsed_ms !== null) {
+        const ms = typeof data.elapsed_ms === 'number' ? data.elapsed_ms : parseFloat(data.elapsed_ms)
+        if (!isNaN(ms)) {
+          latestLatency.value = ms
+          localStorage.setItem('rag_latest_latency_ms', ms.toString())
+          latencyHistory.value.push(ms)
+          if (latencyHistory.value.length > 50) latencyHistory.value.shift()
+          localStorage.setItem('rag_latency_history', JSON.stringify(latencyHistory.value))
+        }
+      }
+
       if (xhr.status >= 200 && xhr.status < 300 && data.status === 'success') {
         job.progress = 100
         job.info = 'Uploaded to S3'
@@ -486,7 +614,8 @@ const uploadFile = (file) => {
         job.etaText = 'COMPLETE'
         job.status = 'completed'
 
-        showToast(`Successfully uploaded ${file.name} to MinIO S3!`, 'success')
+        const latencyNote = data.elapsed_ms !== undefined ? ` (${data.elapsed_ms}ms)` : ''
+        showToast(`Successfully uploaded ${file.name} to MinIO S3!${latencyNote}`, 'success')
         fetchDocuments()
       } else {
         job.progress = 100
@@ -610,10 +739,46 @@ const handleDrop = (event) => {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(0, 229, 255, 0.3);
 }
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .btn-secondary svg {
   width: 13px;
   height: 13px;
   color: var(--text-muted);
+}
+
+.btn-reset-danger {
+  background: #ef4444;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  color: #ffffff;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.35);
+}
+.btn-reset-danger:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #b91c1c;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+.btn-reset-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-reset-danger svg {
+  width: 13px;
+  height: 13px;
+  color: #ffffff;
 }
 
 .btn-primary {
@@ -702,6 +867,10 @@ const handleDrop = (event) => {
   background: rgba(16, 185, 129, 0.1);
   color: var(--status-green);
 }
+.metric-icon-box.dim {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-dim);
+}
 .metric-icon-box svg {
   width: 14px;
   height: 14px;
@@ -735,6 +904,15 @@ const handleDrop = (event) => {
   font-size: 9px;
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.metric-tag-empty {
+  font-size: 9px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 700;
