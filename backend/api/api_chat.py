@@ -59,11 +59,12 @@ async def chat_endpoint(prompt: str, session_id: str):
                 prompt,
                 history,
                 MANAGER_TOOLS_SCHEMA,
-                get_manager_tools(agent_logger, approval_callback=approval_callback, task_emitter=agent_task_emitter),
+                get_manager_tools(agent_logger, approval_callback=approval_callback, task_emitter=agent_task_emitter, session_id=session_id),
                 use_guardrails=True,
                 logger=agent_logger,
                 approval_callback=approval_callback,
-                task_emitter=agent_task_emitter
+                task_emitter=agent_task_emitter,
+                session_id=session_id
             )
 
             save_history(session_id, updated_history)

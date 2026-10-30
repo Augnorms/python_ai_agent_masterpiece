@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AgentOrchestratorView from '../views/AgentOrchestratorView.vue'
 import KnowledgeRagView from '../views/KnowledgeRagView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const routes = [
   {
@@ -18,6 +19,12 @@ const routes = [
     name: 'knowledge',
     component: KnowledgeRagView,
     meta: { title: 'Knowledge & RAG Hub' }
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: { title: 'System & Swarm Settings' }
   }
 ]
 

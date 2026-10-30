@@ -1,16 +1,18 @@
 import requests
 import os
 import datetime
-from database.database import get_all_users, delete_user
+from database.database import get_all_users, delete_user, keyword_search_chunks
 import chromadb
 from sentence_transformers import SentenceTransformer
+
+from inject_rag.ingest_rag_service import get_embedding_model
 
 #connect to chroma database using client
 chroma_client = chromadb.HttpClient(host='localhost', port=8001)
 
 #get or create a collection of table like sql
 collection = chroma_client.get_or_create_collection(name="company_docs")
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+embedding_model = get_embedding_model("default")
 
 
 MATH_TOOLS_SCHEMA  = [
@@ -187,25 +189,31 @@ def send_email(to_address: str, subject: str, body: str):
 
 
 def search_company_docs(query: str):
-    """Searches the company policy documents and knowledge base for relevant information."""
-
-
+    """Hybrid Search: Combines Semantic (ChromaDB) and Keyword (Postgres) results."""
     try:
-        #embedd users query
-        query_embedding = embedding_model.encode(query).tolist()
+        live_col = chroma_client.get_or_create_collection(name="company_docs")
         
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=6
-        )
+        # 1. Semantic Search (ChromaDB)
+        vector_docs = []
+        if live_col.count() > 0:
+            active_model = get_embedding_model()
+            query_embedding = active_model.encode(query).tolist()
+            results = live_col.query(query_embeddings=[query_embedding], n_results=3)
+            if results['documents'] and results['documents'][0]:
+                vector_docs = results['documents'][0]
 
-        # 4. Format the result
-        if not results['documents'][0]:
+        # 2. Keyword Search (Postgres)
+        keyword_docs = keyword_search_chunks(query, limit=2)
+
+        # 3. Merge and Deduplicate
+        combined_docs = list(set(vector_docs + keyword_docs))
+
+        if not combined_docs:
             return "No relevant documents found."
-            
-        formatted_results = "\n---\n".join(results['documents'][0])
+
+        formatted_results = "\n---\n".join(combined_docs)
         return f"Found these relevant sections in the company documents:\n\n{formatted_results}"
-        
+
     except Exception as e:
         raise ValueError(f"Failed to search docs: {str(e)}")
 

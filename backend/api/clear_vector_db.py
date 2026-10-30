@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 import chromadb
+from database.database import clear_document_chunks
 
 router = APIRouter()
 
@@ -14,7 +15,12 @@ async def reset_vector_db():
     """Deletes the entire collection from ChromaDB."""
     try:
         try:
+            #clear chromadb
             chroma_client.delete_collection(name="company_docs")
+
+            #clear postgres
+            clear_document_chunks()
+
         except Exception as del_err:
             if "does not exist" not in str(del_err).lower():
                 raise del_err

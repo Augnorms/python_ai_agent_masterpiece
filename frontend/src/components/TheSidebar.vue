@@ -22,15 +22,6 @@
     <div class="nav-section">
       <div class="nav-label">NAVIGATION</div>
       <nav class="nav-links">
-        <router-link to="/orchestrator" class="nav-item" active-class="active">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <polygon points="12 2 2 7 12 12 22 7 12 2" />
-            <polyline points="2 17 12 22 22 17" />
-            <polyline points="2 12 12 17 22 12" />
-          </svg>
-          <span class="nav-text">Agent Orchestrator</span>
-        </router-link>
-
         <router-link to="/knowledge" class="nav-item" active-class="active">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -39,11 +30,31 @@
           </svg>
           <span class="nav-text">Knowledge & RAG</span>
         </router-link>
+
+        <router-link to="/orchestrator" class="nav-item" active-class="active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+            <polyline points="2 17 12 22 22 17" />
+            <polyline points="2 12 12 17 22 12" />
+          </svg>
+          <span class="nav-text">Agent Orchestrator</span>
+        </router-link>
       </nav>
     </div>
 
     <!-- Spacer -->
     <div class="sidebar-spacer"></div>
+
+    <!-- Settings Route (Close to Environment Card) -->
+    <div class="sidebar-bottom-nav">
+      <router-link to="/settings" class="nav-item" active-class="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+        <span class="nav-text">Settings</span>
+      </router-link>
+    </div>
 
     <!-- Environment Footer Widget -->
     <div class="environment-widget">
@@ -182,6 +193,10 @@
 
 .sidebar-spacer {
   flex: 1;
+}
+
+.sidebar-bottom-nav {
+  margin-bottom: 12px;
 }
 
 .environment-widget {

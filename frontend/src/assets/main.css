@@ -341,3 +341,42 @@ a {
 [data-theme="light"] .chip-val {
   color: #0f172a !important;
 }
+
+/* Settings Light Mode Overrides */
+[data-theme="light"] .settings-header,
+[data-theme="light"] .form-action-footer {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .settings-card,
+[data-theme="light"] .agent-checkbox-card,
+[data-theme="light"] .form-toggle-row {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .card-header {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .settings-title,
+[data-theme="light"] .card-title,
+[data-theme="light"] .toggle-title,
+[data-theme="light"] .agent-name-label {
+  color: #0f172a !important;
+}
+[data-theme="light"] .form-select,
+[data-theme="light"] .form-input {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .slider {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="light"] .slider:before {
+  background-color: #64748b !important;
+}
+[data-theme="light"] input:checked + .slider:before {
+  background-color: #0284c7 !important;
+}

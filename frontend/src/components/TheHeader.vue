@@ -2,15 +2,15 @@
   <header class="app-header">
     <div class="header-left">
       <!-- Swarm Status Pill -->
-      <div class="status-pill">
-        <span class="active-dot" :class="{ 'inactive-dot': status !== 'active' }"></span>
-        <span class="status-text">{{ status === 'active' ? 'Swarm Active' : status }}</span>
+      <div class="status-pill" :title="`Swarm Status: ${isSwarmActive ? 'Active' : 'Standby'} (${swarmMode})`">
+        <span class="active-dot" :class="{ 'inactive-dot': !isSwarmActive }"></span>
+        <span class="status-text">{{ isSwarmActive ? 'Swarm Active' : 'Swarm Standby' }}</span>
         <span class="divider">•</span>
         <span class="region-text">{{ region }}</span>
       </div>
 
       <!-- Supervisor Model Badge -->
-      <div class="model-badge">
+      <div class="model-badge" :title="`Active Supervisor Model: ${model}`">
         <svg class="model-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10" />
           <path d="M12 16v-4M12 8h.01" />
@@ -78,24 +78,59 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const isDark = ref(true)
-const status = ref('active')
+const isSwarmActive = ref(true)
+const swarmMode = ref('autonomous')
 const region = ref('Ghana-Accra')
-const model = ref('openai/gpt-oss-20b')
+const model = ref('openai/gpt-oss-120b')
 
-const fetchStatus = async () => {
+const getSessionId = () => {
+  return localStorage.getItem('agent_session_id') || 'default'
+}
+
+const fetchSettings = async () => {
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/status')
+    const sid = getSessionId()
+    const res = await fetch(`http://127.0.0.1:8000/api/settings?session_id=${encodeURIComponent(sid)}`)
     if (res.ok) {
-      const data = await res.json()
-      if (data.status) status.value = data.status
-      if (data.region) region.value = data.region
-      if (data.model) model.value = data.model
+      const result = await res.json()
+      if (result && result.data) {
+        const data = result.data
+        if (data.is_swarm_active !== undefined) {
+          isSwarmActive.value = Boolean(data.is_swarm_active)
+        }
+        if (data.swarm_mode) {
+          swarmMode.value = data.swarm_mode
+        }
+        const activeModel = data.custom_model_id || data.supervisor_model
+        if (activeModel) {
+          model.value = activeModel
+        }
+      }
     }
   } catch (err) {
-    console.warn('Could not fetch status from backend:', err)
+    console.warn('Could not fetch settings for header from backend:', err)
+  }
+}
+
+const handleSettingsUpdated = (event) => {
+  if (event && event.detail) {
+    const detail = event.detail
+    if (detail.is_swarm_active !== undefined) {
+      isSwarmActive.value = Boolean(detail.is_swarm_active)
+    }
+    if (detail.supervisor_model) {
+      model.value = detail.custom_model_id || detail.supervisor_model
+    }
+    if (detail.swarm_mode) {
+      swarmMode.value = detail.swarm_mode
+    }
+  } else {
+    fetchSettings()
   }
 }
 
@@ -106,11 +141,24 @@ const toggleTheme = () => {
   localStorage.setItem('theme', theme)
 }
 
+// Watch route navigation so changing pages always reflects current settings
+watch(() => route.path, () => {
+  fetchSettings()
+})
+
 onMounted(() => {
   const savedTheme = localStorage.getItem('theme') || 'dark'
   isDark.value = savedTheme === 'dark'
   document.documentElement.setAttribute('data-theme', savedTheme)
-  fetchStatus()
+
+  fetchSettings()
+  window.addEventListener('swarm-settings-updated', handleSettingsUpdated)
+  window.addEventListener('storage', fetchSettings)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('swarm-settings-updated', handleSettingsUpdated)
+  window.removeEventListener('storage', fetchSettings)
 })
 </script>
 

@@ -7,6 +7,7 @@ from api.document_upload import router as upload_router
 from api.fetch_uploaded_docs import router as documents_router
 from api.clear_vector_db import router as reset_vector_db
 from api.get_vectordb_stats import router as vectordb_stats_router
+from api.api_settings import router as settings_router
 
 __all__ = [
     "chat_router",
@@ -17,5 +18,6 @@ __all__ = [
     "upload_router",
     "documents_router",
     "reset_vector_db",
-    "vectordb_stats_router"
+    "vectordb_stats_router",
+    "settings_router"
 ]

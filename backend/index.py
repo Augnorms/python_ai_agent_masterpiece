@@ -10,7 +10,8 @@ from api import (
     upload_router,
     documents_router,
     reset_vector_db,
-    vectordb_stats_router
+    vectordb_stats_router,
+    settings_router
 )
 
 app = FastAPI()
@@ -34,5 +35,4 @@ app.include_router(upload_router)
 app.include_router(documents_router)
 app.include_router(reset_vector_db)
 app.include_router(vectordb_stats_router)
-
-app.include_router(vectordb_stats_router)
+app.include_router(settings_router)

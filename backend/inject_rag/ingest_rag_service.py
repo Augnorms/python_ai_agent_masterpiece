@@ -3,10 +3,28 @@ from sentence_transformers import SentenceTransformer
 import io
 import docx
 import pypdf
+from database.database import save_document_chunks, get_swarm_settings
 
 # Connect to Docker ChromaDB
 chroma_client = chromadb.HttpClient(host='localhost', port=8001)
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+_model_cache = {}
+
+def get_embedding_model(session_id: str = "default") -> SentenceTransformer:
+    """Returns a cached SentenceTransformer instance according to active settings."""
+    try:
+        settings = get_swarm_settings(session_id)
+        model_name = settings.get("embedding_model") or "all-MiniLM-L6-v2"
+    except Exception as e:
+        model_name = "all-MiniLM-L6-v2"
+
+    if model_name not in _model_cache:
+        print(f"[RAG] Loading embedding model into memory: {model_name}...")
+        _model_cache[model_name] = SentenceTransformer(model_name)
+    return _model_cache[model_name]
+
+# Backwards compatibility reference
+embedding_model = get_embedding_model("default")
 
 def extract_text_from_file(file_content: bytes, filename: str) -> str:
     """Extracts text based on file format (.docx, .pdf, .txt, .md, etc.)."""
@@ -38,6 +56,7 @@ def extract_text_from_file(file_content: bytes, filename: str) -> str:
             # Fallback for Windows-1252 / Latin-1 encoded text files
             return file_content.decode('latin-1', errors='ignore')
 
+
 def process_and_ingest_file(file_content: bytes, filename: str):
     """Reads a file, chunks it, embeds it, and saves it to ChromaDB."""
     try:
@@ -48,19 +67,43 @@ def process_and_ingest_file(file_content: bytes, filename: str):
             return "File was empty or contained no extractable text."
         
         # 2. Chunk the text (split by paragraphs)
-        chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
+        # 2. Smart Chunking
+        chunks = []
         
-        # Fallback if text does not contain double newlines
-        if len(chunks) <= 1:
-            line_chunks = [line.strip() for line in text.split("\n") if len(line.strip()) > 30]
-            if len(line_chunks) > 1:
-                chunks = line_chunks
-        
+        # If it's markdown or text, split by headings or keep tables together
+        if filename.lower().endswith(('.md', '.txt', '.pdf', '.docx', '.xlsx')):
+            # Split by markdown headers (e.g., #, ##, ###)
+            import re
+            sections = re.split(r'\n(?=#)', text)
+            
+            for section in sections:
+                if len(section) > 1000:
+                    paragraphs = section.split("\n\n")
+                    current_chunk = ""
+                    for p in paragraphs:
+                        if len(current_chunk) + len(p) < 1000:
+                            current_chunk += p + "\n\n"
+                        else:
+                            if current_chunk.strip(): chunks.append(current_chunk.strip())
+                            current_chunk = p + "\n\n"
+                    if current_chunk.strip(): chunks.append(current_chunk.strip())
+                else:
+                    if section.strip():
+                        chunks.append(section.strip())
+        else:
+            # Standard paragraph split for PDFs/DOCX
+            chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
+
+        # Fallback if no chunks
         if not chunks:
             chunks = [text.strip()]
 
-        # 3. Create embeddings
-        embeddings = embedding_model.encode(chunks).tolist()
+        # Save chunks to Postgres for Hybrid (Keyword) Search
+        save_document_chunks(filename, chunks)    
+
+        # 3. Create embeddings using active model
+        model = get_embedding_model()
+        embeddings = model.encode(chunks).tolist()
         
         # 4. Save to ChromaDB
         collection = chroma_client.get_or_create_collection(name="company_docs")

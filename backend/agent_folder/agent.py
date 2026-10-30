@@ -1,6 +1,7 @@
 from openai.resources.beta.threads import messages
 from agent_folder.client import client
 from agent_folder.guardrails import is_prompt_injection, detect_math, did_use_math_previously
+from database.database import get_swarm_settings
 import json
 import time
 
@@ -26,11 +27,12 @@ def run_agent(
      available_tools, 
      tool_functions, 
      system_input=system_input, 
-     maxstep=10, 
+     maxstep=None, 
      use_guardrails=True, 
      logger=print,
      approval_callback=None,
-     task_emitter=None
+     task_emitter=None,
+     session_id="default"
      ):
 
     if not messages:
@@ -45,17 +47,31 @@ def run_agent(
         logger("[security guardrail] Blocked prompt injection attempt.")
         return "I cannot fulfill this request due to security policies.", []
 
+    # Fetch session settings from DB
+    settings = get_swarm_settings(session_id)
+    active_model = settings.get("supervisor_model") or "openai/gpt-oss-120b"
+    active_temperature = float(settings.get("temperature") if settings.get("temperature") is not None else 0.2)
+    effective_maxstep = int(maxstep) if maxstep is not None else int(settings.get("max_steps") or 10)
+
+    # Check Swarm active state
+    if not settings.get("is_swarm_active", True):
+        logger("[swarm] Swarm is set to STANDBY mode.")
+        return "The autonomous multi-agent swarm is currently in STANDBY mode. Please enable it in System Settings to resume task orchestration.", messages
+
+    logger(f"[Orchestrator Config] Model: {active_model} | Temp: {active_temperature} | MaxSteps: {effective_maxstep}")
+
     #Append the new message to the history (do NOT overwrite it)
     messages.append({"role": "user", "content": user_input})
 
     reflection_done = False
 
-    for i in range(maxstep):
+    for i in range(effective_maxstep):
         try:
             response = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model=active_model,
                 messages=messages,
-                tools=available_tools
+                tools=available_tools,
+                temperature=active_temperature
             )
         except Exception as e:
             logger(f"[API Error] {e}")
