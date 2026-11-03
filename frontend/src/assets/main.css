@@ -380,3 +380,795 @@ a {
 [data-theme="light"] input:checked + .slider:before {
   background-color: #0284c7 !important;
 }
+
+/* ==========================================================================
+   SCADA PLANT & TELEMETRY LIGHT THEME OVERRIDES (OVERVIEW & MODBUS VIEWS)
+   ========================================================================== */
+
+/* Overall Containers & Workspace */
+[data-theme="light"] .scada-container {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .scada-content {
+  background: #f1f5f9 !important;
+}
+
+/* 1. SCADA Header & Process Control Ribbons */
+[data-theme="light"] .scada-header-ribbon,
+[data-theme="light"] .control-ribbon {
+  background: #ffffff !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .brand-primary {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .brand-sub {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .status-box {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .status-box.active-modbus {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border-color: rgba(2, 132, 199, 0.4) !important;
+}
+
+[data-theme="light"] .status-name {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .status-state {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .status-state.highlight {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .alarm-banner-box {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+[data-theme="light"] .alarm-banner-label {
+  color: #64748b !important;
+  border-right-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .alarm-msg {
+  color: #15803d !important;
+}
+
+[data-theme="light"] .mode-toggle-group {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .mode-btn {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .mode-btn:hover {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .mode-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .profile-avatar-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .pill-sim-mode {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .equip-badge.green {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .equip-badge.cyan {
+  background: #f0f9ff !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .equip-badge.purple {
+  background: #faf5ff !important;
+  border-color: #7c3aed !important;
+  color: #6d28d9 !important;
+}
+
+[data-theme="light"] .equip-badge.off {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
+}
+
+/* 2. Modbus Connection & Status Sub-Ribbon */
+[data-theme="light"] .modbus-conn-ribbon {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .conn-title {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .conn-meta-item .meta-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .conn-meta-item .meta-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cyan-text {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .green-text {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .purple-text {
+  color: #7c3aed !important;
+}
+
+[data-theme="light"] .cyan-blue-text {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .dim-cyan-text {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .dim-purple-text {
+  color: #6d28d9 !important;
+}
+
+[data-theme="light"] .watchdog-pill {
+  background: rgba(5, 150, 105, 0.1) !important;
+  border-color: rgba(5, 150, 105, 0.3) !important;
+  color: #059669 !important;
+}
+
+[data-theme="light"] .btn-tool-export {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .btn-tool-export:hover {
+  background: #f1f5f9 !important;
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .btn-tool-pcap {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* 3. KPI Metric Cards (Overview & Modbus) */
+[data-theme="light"] .kpi-card,
+[data-theme="light"] .metric-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .kpi-label,
+[data-theme="light"] .metric-title {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .metric-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .kpi-value.cyan {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .kpi-value.green {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .kpi-value.purple {
+  color: #7c3aed !important;
+}
+
+[data-theme="light"] .kpi-unit {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .kpi-bar-bg {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 4. Modbus Register Mapping & Live Polling Table */
+[data-theme="light"] .scada-table-panel {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .table-panel-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .table-icon-badge {
+  background: rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .table-title {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .table-sub-info {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .table-search-box {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .table-search-box svg {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .search-input {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .table-tabs-bar {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .tab-pill {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .tab-pill:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .tab-pill.active {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .indicator-text {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .modbus-table {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .modbus-table th {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .modbus-table td {
+  background: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .modbus-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .modbus-table tbody tr.row-flashing td {
+  background: rgba(2, 132, 199, 0.1) !important;
+}
+
+[data-theme="light"] .addr-cell {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .tag-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .tag-identifier {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .dtype-cell {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .raw-cell {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .scaled-badge.cyan-val {
+  color: #0284c7 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .scaled-badge.bool-true {
+  color: #059669 !important;
+  background: rgba(5, 150, 105, 0.1) !important;
+  border: 1px solid rgba(5, 150, 105, 0.3) !important;
+}
+
+[data-theme="light"] .scaled-badge.bool-false {
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .units-cell {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-write {
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  background: #f0f9ff !important;
+}
+
+[data-theme="light"] .btn-write:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-force {
+  color: #059669 !important;
+  border-color: #059669 !important;
+  background: #ecfdf5 !important;
+}
+
+[data-theme="light"] .btn-force:hover {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-force-active {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .read-only-tag {
+  color: #94a3b8 !important;
+}
+
+/* 5. Dual-Model Prediction Engine Panel (Overview) */
+[data-theme="light"] .engine-panel {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .engine-icon-badge {
+  background: rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .engine-title {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .badge-status-live {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .engine-desc {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .badge-stat-pill.cyan-stat {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .badge-stat-pill.red-stat {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .schedule-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .select-inline-wrapper {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .schedule-prefix {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .select-inline {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  color-scheme: light !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+[data-theme="light"] .select-inline:hover,
+[data-theme="light"] .select-inline:focus {
+  background-color: #f1f5f9 !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .select-inline option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .badge-countdown {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .engine-info-note {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .model-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .model-card.alpha {
+  border-left-color: #0284c7 !important;
+}
+
+[data-theme="light"] .model-card.beta {
+  border-left-color: #7c3aed !important;
+}
+
+[data-theme="light"] .model-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .model-subtitle {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .m-val {
+  color: #0f172a !important;
+}
+
+/* 6. Confidence, Anomalies & Reports Panels */
+[data-theme="light"] .confidence-panel,
+[data-theme="light"] .anomalies-panel,
+[data-theme="light"] .report-panel {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .confidence-score {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .score-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .loss-val {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .agreement-val {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .kalman-bar-bg {
+  background: #e2e8f0 !important;
+}
+
+[data-theme="light"] .threshold-note {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .anomaly-alert-card {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+[data-theme="light"] .anomaly-title {
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .anomaly-desc {
+  color: #991b1b !important;
+}
+
+[data-theme="light"] .cot-header {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .cot-step {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .report-icon-box {
+  background: rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .report-title {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .report-desc {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .badge-sys-status {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .report-title-line {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .report-title-line strong {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .report-badge-status {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .btn-action-audit,
+[data-theme="light"] .btn-action-recent,
+[data-theme="light"] .btn-action-export {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .btn-action-audit:hover,
+[data-theme="light"] .btn-action-recent:hover,
+[data-theme="light"] .btn-action-export:hover {
+  background: #f1f5f9 !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .recent-cycle-preview {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .cycle-num {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .cycle-time {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .cycle-stat {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .cycle-alert-stat {
+  color: #dc2626 !important;
+}
+
+/* 7. Modals Light Mode (Write, PCAP, Audit) */
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+[data-theme="light"] .modal-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .modal-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .modal-header h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-sub {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .modal-close-btn {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .modal-close-btn:hover {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-body {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .write-meta-grid {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .write-meta-grid .m-val {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .input-label {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .input-inline-wrap {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .input-inline-wrap:focus-within {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+[data-theme="light"] .write-input {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .modal-footer {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .btn-cancel {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .btn-cancel:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .btn-send-write,
+[data-theme="light"] .btn-primary {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-send-write:hover,
+[data-theme="light"] .btn-primary:hover {
+  background: #0369a1 !important;
+}
+
+[data-theme="light"] .pcap-body {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .pcap-row {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .pcap-time {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .pcap-fc {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .pcap-desc {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .pcap-hex {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .log-row {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .log-row.info {
+  background: #f0f9ff !important;
+  border-color: #e0f2fe !important;
+}
+
+[data-theme="light"] .log-row.warn {
+  background: #fffbeb !important;
+  border-color: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+[data-theme="light"] .log-row.success {
+  background: #f0fdf4 !important;
+  border-color: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+/* Explicit overrides for nested boxes in Overview & Telemetry */
+[data-theme="light"] .engine-schedule-bar {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .model-box {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .model-box.alpha {
+  border: 1px solid #bae6fd !important;
+}
+
+[data-theme="light"] .model-box.beta {
+  border: 1px solid #e9d5ff !important;
+}
+
+[data-theme="light"] .model-submetrics {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .conf-metric {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .cot-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}

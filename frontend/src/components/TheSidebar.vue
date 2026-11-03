@@ -18,10 +18,40 @@
       </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Section 1: Process Schematics -->
     <div class="nav-section">
-      <div class="nav-label">NAVIGATION</div>
+      <div class="nav-label">PROCESS SCHEMATICS</div>
       <nav class="nav-links">
+        <router-link to="/overview" class="nav-item" active-class="active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="8.5" />
+            <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+            <path d="M12 3.5v3M12 17.5v3M4 12h3M17 12h3" />
+          </svg>
+          <span class="nav-text">Overview & Predictive Models</span>
+        </router-link>
+      </nav>
+    </div>
+
+    <!-- Section 2: Telemetry & Supervision -->
+    <div class="nav-section">
+      <div class="nav-label">TELEMETRY & SUPERVISION</div>
+      <nav class="nav-links">
+        <router-link to="/modbus" class="nav-item" active-class="active">
+          <!-- PLC Modbus Chip Icon matching media_1793640139533_f007cf37.png -->
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="4" width="15" height="16" rx="2" stroke="currentColor" stroke-width="1.8" />
+            <rect x="6" y="7" width="3" height="4" fill="currentColor" opacity="0.85" />
+            <rect x="11" y="7" width="3" height="4" fill="currentColor" opacity="0.85" />
+            <rect x="6" y="13" width="3" height="4" fill="currentColor" opacity="0.85" />
+            <rect x="11" y="13" width="3" height="4" fill="currentColor" opacity="0.85" />
+            <line x1="18" y1="8" x2="21" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="18" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="18" y1="16" x2="21" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="nav-text">Modbus TCP Telemetry (PLC)</span>
+        </router-link>
+
         <router-link to="/knowledge" class="nav-item" active-class="active">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -78,13 +108,13 @@
 
 <style scoped>
 .sidebar {
-  width: 240px;
-  min-width: 240px;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
+  width: 250px;
+  min-width: 250px;
+  background: var(--bg-sidebar, #070d1a);
+  border-right: 1px solid var(--border-color, #142442);
   display: flex;
   flex-direction: column;
-  padding: 20px 16px;
+  padding: 16px 14px;
   user-select: none;
 }
 
@@ -92,7 +122,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 1px solid rgba(23, 36, 60, 0.7);
 }
 
@@ -109,8 +139,8 @@
 }
 
 .brand-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .brand-text {
@@ -129,66 +159,70 @@
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 1.2px;
-  color: var(--primary-cyan);
+  color: var(--primary-cyan, #00e5ff);
 }
 
 .nav-section {
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .nav-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  padding: 0 8px 12px 8px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text-dim, #64748b);
+  padding: 0 8px 8px 8px;
 }
 
 .nav-links {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
+  padding: 9px 12px;
+  border-radius: 6px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 12.5px;
+  font-weight: 600;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  text-decoration: none;
 }
 
 .nav-icon {
   width: 17px;
   height: 17px;
-  color: var(--text-dim);
+  flex-shrink: 0;
+  color: var(--text-dim, #64748b);
   transition: color 0.2s ease;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main, #f1f5f9);
 }
 
 .nav-item:hover .nav-icon {
-  color: var(--primary-cyan);
+  color: var(--primary-cyan, #00e5ff);
 }
 
+/* Active Tab: Matches media_1793640139533_f007cf37.png with vibrant cyan pill and dark text */
 .nav-item.active {
-  background: rgba(0, 229, 255, 0.07);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  color: var(--primary-cyan);
-  font-weight: 600;
-  box-shadow: 0 0 15px rgba(0, 229, 255, 0.08);
+  background: #00c2e8;
+  border: 1px solid #00c2e8;
+  color: #04101e;
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(0, 194, 232, 0.35);
 }
 
 .nav-item.active .nav-icon {
-  color: var(--primary-cyan);
+  color: #04101e;
+  stroke: #04101e;
 }
 
 .sidebar-spacer {
@@ -201,12 +235,12 @@
 
 .environment-widget {
   background: rgba(13, 21, 39, 0.8);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color, #17243c);
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .env-header {
@@ -219,7 +253,7 @@
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.8px;
-  color: var(--text-dim);
+  color: var(--text-dim, #64748b);
 }
 
 .status-indicator {
@@ -228,21 +262,16 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--status-green);
+  color: var(--status-green, #10b981);
 }
 
 .status-dot {
   width: 6px;
   height: 6px;
-  background-color: var(--status-green);
+  background-color: var(--status-green, #10b981);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--status-green);
+  box-shadow: 0 0 8px var(--status-green, #10b981);
   animation: pulse-dot 2s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
 }
 
 .env-details {
@@ -252,19 +281,24 @@
 }
 
 .version-tag {
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  font-family: var(--font-mono, monospace);
 }
 
 .badge-stable {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
   font-size: 9px;
   font-weight: 700;
-  padding: 2px 6px;
+  color: var(--status-green, #10b981);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 1px 6px;
   border-radius: 4px;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  letter-spacing: 0.5px;
 }
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
 </style>
