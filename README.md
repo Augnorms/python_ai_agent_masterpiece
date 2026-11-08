@@ -67,11 +67,11 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Agent Swarm** | Manager/orchestrator dynamically routes tasks to 5 specialized sub-agents: Math, Weather, Database, Email, and RAG |
+| **Multi-Agent Swarm** | Manager/orchestrator dynamically routes tasks to 4 specialized sub-agents: Weather, Database, Email, and RAG |
 | **ReAct Agent Loop** | Thought → Action → Observation cycle with configurable max reasoning steps |
 | **Hybrid RAG Pipeline** | Dual retrieval: semantic search (ChromaDB + SentenceTransformers) + keyword search (PostgreSQL ILIKE) with result deduplication |
 | **Human-in-the-Loop (HITL)** | Dangerous tools (`delete_user`, `send_email`) require real-time human approval via a security gate modal with 60s timeout |
-| **Input Guardrails** | Prompt injection detection, math tool enforcement, and LLM-based tool call auditing |
+| **Input Guardrails** | Prompt injection detection, and LLM-based tool call auditing |
 | **Self-Reflection** | Agent reviews its own answer before finalizing to improve accuracy |
 | **Real-Time SSE Streaming** | Chat responses streamed via Server-Sent Events with full task execution lifecycle events |
 | **SCADA Telemetry Dashboard** | Industrial-grade AQUASYNC SCADA UI with Modbus TCP/OPC-UA status, alarm banners, and register-level monitoring |
@@ -101,10 +101,10 @@
 │  ┌────────────────────────────────────────────────────────────────┐ │
 │  │                  Swarm Manager / Orchestrator                  │ │
 │  │                                                                │ │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐│ │
-│  │  │  Math   │ │ Weather │ │Database │ │  Email  │ │   RAG   ││ │
-│  │  │  Agent  │ │  Agent  │ │  Agent  │ │  Agent  │ │  Agent  ││ │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘│ │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐│ │
+│  │  │ Weather │ │Database │ │  Email  │ │   RAG   ││ │
+│  │  │  Agent  │ │  Agent  │ │  Agent  │ │  Agent  ││ │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘│ │
 │  └────────────────────────────────────────────────────────────────┘ │
 │                                                                     │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │
@@ -272,8 +272,8 @@ swarmflow-ai-orchestrator/
 │   │   ├── agent.py              # ReAct agent loop with guardrails & HITL
 │   │   ├── client.py             # Groq API client (OpenAI SDK)
 │   │   ├── guardrails.py         # Prompt injection & tool call auditing
-│   │   ├── manager.py            # Multi-agent swarm manager (5 sub-agents)
-│   │   └── tools.py              # Tool schemas (math, weather, DB, email, RAG)
+│   │   ├── manager.py            # Multi-agent swarm manager (4 sub-agents)
+│   │   └── tools.py              # Tool schemas (weather, DB, email, RAG)
 │   ├── api/
 │   │   ├── api_chat.py           # SSE streaming chat endpoint
 │   │   ├── api_settings.py       # Swarm settings CRUD
@@ -362,7 +362,6 @@ swarmflow-ai-orchestrator/
 
 | Agent | Tools | Description |
 |-------|-------|-------------|
-| **Math Agent** | `add`, `multiply`, `subtract` | Arithmetic operations with tool-enforced computation |
 | **Weather Agent** | `get_weather` | Real-time weather via Open-Meteo API (geocoding + forecast) |
 | **Database Agent** | `get_user`, `delete_user` | PostgreSQL user record CRUD (delete requires HITL approval) |
 | **Email Agent** | `send_email` | Email dispatch (requires HITL approval, logs to file) |
@@ -371,7 +370,6 @@ swarmflow-ai-orchestrator/
 ### Safety & Guardrails
 
 - **Prompt Injection Detection** — blocks known attack patterns ("ignore previous instructions", "you are now", etc.)
-- **Math Tool Enforcement** — detects math expressions and ensures the math agent is used (no mental calculation)
 - **LLM Tool Call Auditing** — secondary model validates whether the correct tool was selected
 - **Self-Reflection** — agent reviews its own answer before delivering the final response
 - **HITL Security Gate** — real-time human approval for destructive or sensitive operations with 60-second timeout

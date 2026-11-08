@@ -4,14 +4,14 @@
     <div class="control-ribbon">
       <div class="ribbon-left">
         <!-- Simulation Status Pill -->
-        <div class="pill-sim-mode">
-          <span class="pulsing-green-dot"></span>
-          <span class="pill-text">SIMULATION MODE: RUNNING (100%)</span>
+        <div class="pill-sim-mode" :class="{ halted: eStopActive }">
+          <span :class="eStopActive ? 'pulsing-red-dot' : 'pulsing-green-dot'"></span>
+          <span class="pill-text">{{ eStopActive ? 'SIMULATION MODE: HALTED (E-STOP)' : 'SIMULATION MODE: RUNNING (100%)' }}</span>
         </div>
 
         <div class="meta-tag">
           <span class="meta-label">PROCESS ID:</span>
-          <span class="meta-val">SWRO-2024-SYS</span>
+          <span class="meta-val">-</span>
         </div>
 
         <div class="meta-tag">
@@ -25,28 +25,37 @@
             <span class="equip-dot"></span>
             <span>PUMP P-101: <strong>{{ pumpP101 ? 'ON' : 'OFF' }}</strong></span>
           </div>
-
-          <div class="equip-badge cyan" :class="{ off: !feedP202 }" @click="feedP202 = !feedP202" title="Click to toggle Feed P-202">
-            <span class="equip-dot"></span>
-            <span>FEED P-202: <strong>{{ feedP202 ? 'ON' : 'OFF' }}</strong></span>
-          </div>
-
-          <div class="equip-badge purple" @click="cycleMixerSpeed" title="Click to cycle Mixer RPM">
-            <span class="equip-dot"></span>
-            <span>MIXER M-201: <strong>{{ mixerRpm }} RPM</strong></span>
-          </div>
         </div>
       </div>
 
       <div class="ribbon-right">
         <!-- Emergency Stop Button -->
-        <button type="button" class="btn-e-stop" @click="handleEmergencyStop" :class="{ triggered: eStopActive }">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button 
+          type="button" 
+          class="btn-e-stop" 
+          @click="handleEmergencyStop" 
+          :class="{ triggered: eStopActive, loading: isEStopLoading }"
+          :disabled="isEStopLoading"
+          :title="eStopActive ? 'Click to Resume Plant Simulator' : 'Click for Emergency Stop'"
+        >
+          <svg v-if="!isEStopLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span>{{ eStopActive ? 'E-STOP TRIGGERED' : 'EMERGENCY STOP' }}</span>
+          <svg v-else class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"></line>
+            <line x1="12" y1="18" x2="12" y2="22"></line>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+            <line x1="2" y1="12" x2="6" y2="12"></line>
+            <line x1="18" y1="12" x2="22" y2="12"></line>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+          </svg>
+          <span>
+            {{ isEStopLoading ? (eStopActive ? 'RESUMING...' : 'STOPPING...') : (eStopActive ? 'RESUME PLANT' : 'EMERGENCY STOP') }}
+          </span>
         </button>
       </div>
     </div>
@@ -93,7 +102,7 @@
           </div>
           <div class="kpi-footer">
             <div class="kpi-bar-bg">
-              <div class="kpi-bar-fill green" style="width: 82%"></div>
+              <div class="kpi-bar-fill green" style="width: 100%"></div>
             </div>
             <span class="kpi-subtext green-text">GRADE A</span>
           </div>
@@ -113,7 +122,7 @@
           </div>
           <div class="kpi-footer">
             <div class="kpi-bar-bg">
-              <div class="kpi-bar-fill purple" style="width: 52%"></div>
+              <div class="kpi-bar-fill purple" style="width: 100%"></div>
             </div>
             <span class="kpi-subtext">SET 25°C</span>
           </div>
@@ -134,7 +143,7 @@
           </div>
           <div class="kpi-footer">
             <div class="kpi-bar-bg">
-              <div class="kpi-bar-fill blue" style="width: 65%"></div>
+              <div class="kpi-bar-fill blue" style="width: 100%"></div>
             </div>
             <span class="kpi-subtext">DOSING OK</span>
           </div>
@@ -177,7 +186,7 @@
           </div>
           <div class="kpi-footer">
             <div class="kpi-bar-bg">
-              <div class="kpi-bar-fill cyan" style="width: 60%"></div>
+              <div class="kpi-bar-fill cyan" style="width: 100%"></div>
             </div>
             <span class="kpi-subtext">STABLE</span>
           </div>
@@ -220,18 +229,6 @@
                 <h3 class="engine-title">DUAL-MODEL PERMEATE FLOW & PERMEATE TDS PREDICTION ENGINE</h3>
                 <span class="badge-status-live">LIVE INFERENCE ACTIVE</span>
               </div>
-              <p class="engine-desc">
-                Parallel PINN Hydrodynamic vs. DeepLSTM Surrogate Architecture running real-time 24h predictive horizon
-              </p>
-            </div>
-          </div>
-
-          <div class="engine-alert-badges">
-            <div class="badge-stat-pill cyan-stat">
-              <span>MODEL DIVERGENCE: <strong>Δ 4.8% (NORMAL BOUND)</strong></span>
-            </div>
-            <div class="badge-stat-pill red-stat">
-              <span>▲ TDS FORECAST BREACH: <strong>+4.2h (@ 308 ppm)</strong></span>
             </div>
           </div>
         </div>
@@ -251,12 +248,25 @@
                 <option value="30">Every 30 mins</option>
                 <option value="15">Every 15 mins</option>
                 <option value="5">Continuous (5 mins)</option>
+                <option value="1">Fast Test (1 min)</option>
               </select>
             </div>
           </div>
 
           <div class="schedule-right">
-            <span class="badge-countdown font-mono">NEXT RUN: {{ countdownText }}</span>
+            <span class="badge-countdown font-mono" :class="{ 'paused-running': isAgentRunning, 'halted-stopped': eStopActive }">
+              <span v-if="eStopActive" class="running-indicator">
+                <span class="pulsing-red-dot"></span>
+                PLANT HALTED (TIMER RESET)
+              </span>
+              <span v-else-if="isAgentRunning" class="running-indicator">
+                <span class="pulse-agent-dot"></span>
+                AGENT RUNNING (TIMER PAUSED)
+              </span>
+              <span v-else>
+                NEXT RUN: {{ countdownText }}
+              </span>
+            </span>
           </div>
         </div>
 
@@ -276,24 +286,24 @@
             <div class="model-box-header">
               <div class="model-header-left">
                 <span class="model-pulse-dot alpha-dot"></span>
-                <h4 class="model-box-title">MODEL ALPHA: PINN / HYDRODYNAMIC</h4>
+                <h4 class="model-box-title">MODEL ALPHA: permeate_flowrate_model_rf.pkl</h4>
               </div>
-              <span class="model-conf-badge alpha-badge">99.4% CONF</span>
+              <span class="model-conf-badge alpha-badge">{{ alphaConfidence }}</span>
             </div>
-            <p class="model-tech-desc">Physics-Informed Navier-Stokes & Spiegler-Kedem Transport</p>
+            <p class="model-tech-desc">Random Forest Regressor</p>
 
             <div class="model-submetrics">
               <div class="submetric-col">
                 <span class="submetric-lbl">PRED FLOW (T+6H)</span>
-                <span class="submetric-val">71.8 m³/h</span>
+                <span class="submetric-val">{{ alphaFlow !== null ? `${alphaFlow} m³/h` : '--' }}</span>
               </div>
               <div class="submetric-col">
                 <span class="submetric-lbl">PRED TDS (T+6H)</span>
-                <span class="submetric-val">288 ppm</span>
+                <span class="submetric-val">{{ alphaTds !== null ? `${alphaTds} ppm` : 'N/A' }}</span>
               </div>
               <div class="submetric-col">
                 <span class="submetric-lbl">COMPUTE LATENCY</span>
-                <span class="submetric-val font-mono">14 ms</span>
+                <span class="submetric-val font-mono">{{ alphaLatency !== null ? `${alphaLatency} ms` : '-' }}</span>
               </div>
             </div>
           </div>
@@ -303,24 +313,24 @@
             <div class="model-box-header">
               <div class="model-header-left">
                 <span class="model-pulse-dot beta-dot"></span>
-                <h4 class="model-box-title">MODEL BETA: DEEPLSTM / SURROGATE</h4>
+                <h4 class="model-box-title">MODEL BETA: permeate_flowtds_model_rf.pkl</h4>
               </div>
-              <span class="model-conf-badge beta-badge">97.8% CONF</span>
+              <span class="model-conf-badge beta-badge" :class="betaQualityClass">{{ betaQualityStatus ? `${betaQualityStatus.toUpperCase()} QUALITY` : betaConfidence }}</span>
             </div>
-            <p class="model-tech-desc">Bi-Directional LSTM + Temporal Gradient Boosted Regressor</p>
+            <p class="model-tech-desc">Random Forest Regressor</p>
 
             <div class="model-submetrics">
               <div class="submetric-col">
                 <span class="submetric-lbl">PRED FLOW (T+6H)</span>
-                <span class="submetric-val">69.4 m³/h</span>
+                <span class="submetric-val">{{ betaFlow !== null ? `${betaFlow} m³/h` : 'N/A' }}</span>
               </div>
               <div class="submetric-col">
                 <span class="submetric-lbl">PRED TDS (T+6H)</span>
-                <span class="submetric-val warning-val">312 ppm ▲</span>
+                <span class="submetric-val warning-val">{{ betaTds !== null ? `${betaTds} ppm` : '--' }}</span>
               </div>
               <div class="submetric-col">
-                <span class="submetric-lbl">EPOCH TRAIN LOSS</span>
-                <span class="submetric-val font-mono">0.0024 MSE</span>
+                <span class="submetric-lbl">COMPUTE LATENCY</span>
+                <span class="submetric-val font-mono">{{ betaLatency !== null ? `${betaLatency} ms` : '-' }}</span>
               </div>
             </div>
           </div>
@@ -398,27 +408,10 @@
                 <p class="panel-subtitle">AUTONOMOUS DIAGNOSTIC ENGINE</p>
               </div>
             </div>
-            <span class="badge-status-tag purple">ACTIVE</span>
+            <span class="badge-status-tag purple" :class="{ 'pulse-active': isAgentRunning }">{{ isAgentRunning ? 'ANALYZING...' : 'ACTIVE' }}</span>
           </div>
 
           <div class="anomaly-body">
-            <!-- Alert Banner -->
-            <div class="anomaly-alert-card">
-              <div class="alert-top-row">
-                <div class="alert-title-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-bell-icon">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                  </svg>
-                  <span class="alert-title-text">STAGE 2 PRESSURE SURGE</span>
-                </div>
-                <span class="badge-now">NOW</span>
-              </div>
-              <p class="alert-desc">
-                Differential pressure gradient surge (+0.31 bar/h) detected on RO-301.
-              </p>
-            </div>
-
             <!-- Chain of Thought Box -->
             <div class="cot-box">
               <div class="cot-header">
@@ -429,21 +422,21 @@
                   </svg>
                   <span>CHAIN-OF-THOUGHT INFERENCE</span>
                 </div>
-                <span class="cot-steps-tag font-mono">3/3</span>
+                <span class="cot-steps-tag font-mono">{{ cotStepsTag }}</span>
               </div>
 
               <div class="cot-stream font-mono">
-                <div class="cot-line">
-                  <span class="cot-prefix">&gt; 1. Ingestion:</span>
-                  <span class="cot-text">PT-202 at 4.8 bar, flux dropped 15.6 → 14.9 LMH.</span>
+                <div v-if="isAgentRunning && (!reasoningSteps || reasoningSteps.length === 0)" class="cot-line highlight">
+                  <span class="cot-prefix">›</span>
+                  <span class="cot-text">Autonomous Diagnostic Engine evaluating live telemetry against SOP guidelines...</span>
                 </div>
-                <div class="cot-line">
-                  <span class="cot-prefix">&gt; 2. Divergence:</span>
-                  <span class="cot-text">PINN isolates scaling; LSTM tags biofouling (+26.0°C).</span>
+                <div v-for="(step, idx) in reasoningSteps" :key="idx" class="cot-line" :class="{ highlight: idx === reasoningSteps.length - 1 }">
+                  <span class="cot-prefix">›</span>
+                  <span class="cot-text">{{ step }}</span>
                 </div>
-                <div class="cot-line highlight">
-                  <span class="cot-prefix">&gt; 3. Synthesis:</span>
-                  <span class="cot-text">Intervene prior to automatic RO safety trip.</span>
+                <div v-if="!isAgentRunning && (!reasoningSteps || reasoningSteps.length === 0)" class="cot-line">
+                  <span class="cot-prefix">›</span>
+                  <span class="cot-text">Engine ready. Waiting for interval trigger or manual run.</span>
                 </div>
               </div>
             </div>
@@ -469,14 +462,14 @@
               <p class="panel-subtitle">Autonomous telemetry evaluation, physics divergence audit, and multi-model dispatch logs</p>
             </div>
           </div>
-          <span class="badge-status-tag cyan">CYCLE VERIFIED</span>
+          <span class="badge-status-tag cyan">{{ isAgentRunning ? 'EVALUATING CYCLE...' : 'CYCLE VERIFIED' }}</span>
         </div>
 
         <!-- Telemetry Status Badges Bar -->
         <div class="status-indicators-bar">
           <div class="indicator-item">
-            <span class="dot-optimal"></span>
-            <span>HEALTH: <strong>OPTIMAL</strong></span>
+            <span :class="['dot-optimal', plantHealthDotClass]"></span>
+            <span>HEALTH: <strong>{{ plantHealth }}</strong></span>
           </div>
 
           <div class="indicator-item">
@@ -484,7 +477,7 @@
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
-            <span>SCADA LINK: <strong>CONNECTED (12ms)</strong></span>
+            <span>SCADA LINK: <strong>{{ scadaLinkStatus }}</strong></span>
           </div>
 
           <div class="indicator-item">
@@ -492,46 +485,38 @@
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 14 14" />
             </svg>
-            <span>ORCHESTRATOR: <strong>IDLE (NEXT 58m)</strong></span>
+            <span>ORCHESTRATOR: <strong>{{ isAgentRunning ? 'RUNNING' : 'IDLE' }}</strong></span>
           </div>
 
           <div class="indicator-item pill-mode">
-            <span>MODE: <strong>60 MIN AUTO</strong></span>
+            <span>MODE: <strong>{{ selectedInterval }} MIN AUTO</strong></span>
           </div>
         </div>
 
         <!-- Last Run Report and Actions Row -->
         <div class="execution-report-row">
           <div class="report-left">
-            <div class="report-check-box">
+            <div class="report-check-box" :class="{ 'error-box': lastReportBadgeClass === 'red' }">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
             <div class="report-text-group">
               <span class="report-title-line">
-                LAST RUN REPORT: <strong>CYCLE #142 @ 14:26:58 (1.42s runtime)</strong>
+                LAST RUN REPORT: <strong>{{ lastReportTime }}</strong>
               </span>
-              <span class="report-badge-status">SUCCESS / ACTION RECOMMENDED</span>
+              <span :class="['report-badge-status', lastReportBadgeClass]">{{ lastReportBadge }}</span>
             </div>
           </div>
 
           <div class="report-actions">
-            <button type="button" class="btn-action-audit" @click="showAuditModal = true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+            <button type="button" class="btn-action-audit" @click="triggerAutoRun" :disabled="isAgentRunning" title="Run autonomous supervisor immediately">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': isAgentRunning }">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
-              <span>EXECUTION AUDIT LOG</span>
-            </button>
-
-            <button type="button" class="btn-action-recent" @click="showRecentCycles = !showRecentCycles">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="1 4 1 10 7 10" />
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-              </svg>
-              <span>RECENT CYCLES</span>
+              <span>{{ isAgentRunning ? 'Running Cycle...' : 'Run Cycle Now' }}</span>
             </button>
 
             <button type="button" class="btn-action-export" @click="exportExecutions">
@@ -548,12 +533,25 @@
         <!-- Mini Recent Cycle Card Preview -->
         <div class="recent-cycle-preview">
           <div class="cycle-left-info">
-            <span class="cycle-num font-mono">Cycle #142</span>
-            <span class="cycle-time font-mono">14:26:58 (1.42s)</span>
-            <span class="cycle-stat">Δ 4.8% divergence</span>
-            <span class="cycle-alert-stat font-mono">+0.31 bar/h surge</span>
+            <span class="cycle-num font-mono">CYCLE #{{ cycleNumber }}</span>
+            <span class="cycle-time font-mono">{{ cycleTimestamp }}</span>
+            <span class="cycle-stat">{{ cycleStatText }}</span>
+            <span class="cycle-alert-stat font-mono">+{{ cycleAlerts }} ALERTS</span>
           </div>
-          <span class="cycle-tag-action">ACTION REC</span>
+          <span :class="['cycle-tag-action', cycleTagClass]">{{ cycleActionTag }}</span>
+        </div>
+
+        <!-- Full Autonomous Diagnostic Report Content -->
+        <div v-if="diagnosticReport" class="diagnostic-report-card">
+          <div class="diag-report-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="diag-report-title">AUTONOMOUS SOP DIAGNOSTIC REPORT</span>
+          </div>
+          <div class="diag-report-text font-mono">
+            {{ diagnosticReport }}
+          </div>
         </div>
       </section>
     </div>
@@ -609,39 +607,327 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 // Real-time Cycle Clock
-const cycleClock = ref('14:42:21.19')
+const cycleClock = ref('')
 let clockTimer = null
 
-// Live Countdown
-const countdownSeconds = ref(3508) // 58m 28s
-const countdownText = ref('58m 28s')
+// Persistence Keys
+const INTERVAL_STORAGE_KEY = 'scada_execution_interval'
+const TARGET_TIMESTAMP_KEY = 'scada_next_run_target'
+
+// Load persisted interval from localStorage (default: '60')
+const savedInterval = (typeof localStorage !== 'undefined' && localStorage.getItem(INTERVAL_STORAGE_KEY)) || '60'
+const selectedInterval = ref(savedInterval)
+
+// Calculate initial countdown based on saved target timestamp or interval duration
+const getInitialCountdownSeconds = () => {
+  const intervalMins = parseInt(selectedInterval.value) || 60
+  const intervalSecs = intervalMins * 60
+  if (typeof localStorage !== 'undefined') {
+    const savedTarget = localStorage.getItem(TARGET_TIMESTAMP_KEY)
+    if (savedTarget) {
+      const remaining = Math.round((parseInt(savedTarget) - Date.now()) / 1000)
+      if (remaining > 0 && remaining <= intervalSecs) {
+        return remaining
+      }
+    }
+    // Initialize target timestamp
+    localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
+  }
+  return intervalSecs
+}
+
+const initialRemaining = getInitialCountdownSeconds()
+const countdownSeconds = ref(initialRemaining)
+const initMins = Math.floor(initialRemaining / 60)
+const initSecs = initialRemaining % 60
+const countdownText = ref(`${initMins}m ${String(initSecs).padStart(2, '0')}s`)
 let countdownTimer = null
+
+// ─── Backend API Base URL ───────────────────────────────────────
+const API_BASE = 'http://localhost:8000'
 
 // Equipment States
 const pumpP101 = ref(true)
-const feedP202 = ref(true)
-const mixerRpm = ref(350)
 const eStopActive = ref(false)
+const isEStopLoading = ref(false)
 
 // KPI Telemetry Values
-const flowRate = ref(74.5)
-const salinityTds = ref(819)
-const temperature = ref(26.0)
-const concentration = ref(24.9)
+const flowRate = ref(74.8)
+const salinityTds = ref(804)
+const temperature = ref(25.8)
+const concentration = ref(24.8)
 const recoveryRatio = ref(74.9)
-const membraneFlux = ref(14.9)
+const membraneFlux = ref(15.1)
 const feedPressure = ref(4.8)
 
-// Interval Selector
-const selectedInterval = ref('60')
+let telemetryTimer = null
+let isFetchingTelemetry = false
 
+// Fetch live telemetry from backend
+const fetchLiveTelemetry = async () => {
+  if (isFetchingTelemetry) return
+  isFetchingTelemetry = true
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 3500)
+
+  try {
+    const response = await fetch(`${API_BASE}/api/telemetry/live`, { signal: controller.signal })
+    clearTimeout(timeoutId)
+    if (!response.ok) return
+    const json = await response.json()
+    if (json.status === 'success' && Array.isArray(json.data)) {
+      for (const item of json.data) {
+        const val = typeof item.scaled === 'number' ? item.scaled : parseFloat(item.scaled)
+        if (isNaN(val)) continue
+
+        if (item.address === '40001') {
+          flowRate.value = val
+        } else if (item.address === '40002') {
+          salinityTds.value = Math.round(val)
+        } else if (item.address === '40003') {
+          temperature.value = val
+        } else if (item.address === '40007') {
+          concentration.value = val
+        } else if (item.address === '40008') {
+          recoveryRatio.value = val
+        } else if (item.address === '40009') {
+          membraneFlux.value = val
+        } else if (item.address === '40010') {
+          feedPressure.value = val
+        }
+      }
+    }
+  } catch (err) {
+    // Keep current values on network interruption
+  } finally {
+    clearTimeout(timeoutId)
+    isFetchingTelemetry = false
+  }
+}
+
+// ─── Predictions State (from /api/predict/live) ─────────────────
+const alphaFlow = ref(71.8)
+const alphaTds = ref(null)
+const alphaLatency = ref(14)
+const alphaConfidence = ref('99.4% CONF')
+
+const betaFlow = ref(null)
+const betaTds = ref(312.0)
+const betaLatency = ref(14)
+const betaQualityStatus = ref('Poor')
+const betaConfidence = ref('97.8% CONF')
+
+const betaQualityClass = computed(() => {
+  const status = (betaQualityStatus.value || '').toLowerCase()
+  if (status === 'good' || status === 'excellent') return 'green'
+  if (status === 'warning') return 'amber'
+  if (status === 'poor') return 'red'
+  return 'green'
+})
+
+let predictTimer = null
+let isFetchingPredictions = false
+
+// Fetch live predictions from backend
+const fetchLivePredictions = async () => {
+  if (isFetchingPredictions) return
+  isFetchingPredictions = true
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 3500)
+
+  try {
+    const response = await fetch(`${API_BASE}/api/predict/live`, { signal: controller.signal })
+    clearTimeout(timeoutId)
+    if (!response.ok) return
+    const json = await response.json()
+    if (json.status === 'success' && json.predictions) {
+      // Model Alpha
+      if (json.predictions.alpha) {
+        if (json.predictions.alpha.flow !== null && json.predictions.alpha.flow !== undefined) {
+          alphaFlow.value = json.predictions.alpha.flow
+        }
+        if (json.predictions.alpha.tds !== null && json.predictions.alpha.tds !== undefined) {
+          alphaTds.value = json.predictions.alpha.tds
+        }
+        if (json.predictions.alpha.latency_ms !== null && json.predictions.alpha.latency_ms !== undefined) {
+          alphaLatency.value = json.predictions.alpha.latency_ms
+        }
+      }
+
+      // Model Beta
+      if (json.predictions.beta) {
+        if (json.predictions.beta.flow !== null && json.predictions.beta.flow !== undefined) {
+          betaFlow.value = json.predictions.beta.flow
+        }
+        if (json.predictions.beta.tds !== null && json.predictions.beta.tds !== undefined) {
+          betaTds.value = json.predictions.beta.tds
+        }
+        if (json.predictions.beta.quality_status) {
+          betaQualityStatus.value = json.predictions.beta.quality_status
+        }
+        if (json.predictions.beta.latency_ms !== null && json.predictions.beta.latency_ms !== undefined) {
+          betaLatency.value = json.predictions.beta.latency_ms
+        }
+      }
+    }
+  } catch (err) {
+    // Keep current values on network interruption
+  } finally {
+    clearTimeout(timeoutId)
+    isFetchingPredictions = false
+  }
+}
+
+// ─── Autonomous Agent Auto-Run State (/api/agent/auto-run) ─────────
+const isAgentRunning = ref(false)
+const diagnosticReport = ref(null)
+const reasoningSteps = ref([])
+const cycleNumber = ref(142)
+const cycleTimestamp = ref('14:26:57')
+const cycleFlow = ref(74.8)
+const cycleTds = ref(312.0)
+const cycleQuality = ref('Good')
+const plantHealth = ref('OPTIMAL')
+const plantHealthDotClass = ref('')
+const scadaLinkStatus = ref('CONNECTED (PORT 502)')
+const lastReportTime = ref('CYCLE #142 (14:26:57)')
+const lastReportBadge = ref('GRADE A - SOP OK')
+const lastReportBadgeClass = ref('green')
+const cycleAlerts = ref(0)
+const cycleActionTag = ref('VERIFIED NORMAL')
+const cycleTagClass = ref('green')
+
+const cotStepsTag = computed(() => {
+  if (isAgentRunning.value) return 'RUNNING INFERENCE...'
+  if (reasoningSteps.value.length === 0) return 'IDLE'
+  return `${reasoningSteps.value.length} STEPS`
+})
+
+const cycleStatText = computed(() => {
+  return `Flow: ${cycleFlow.value} m³/h | TDS: ${cycleTds.value} ppm (${cycleQuality.value})`
+})
+
+// Trigger Auto-Run from backend
+const triggerAutoRun = async () => {
+  if (isAgentRunning.value || eStopActive.value) return
+  isAgentRunning.value = true
+
+  try {
+    const response = await fetch(`${API_BASE}/api/agent/auto-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const json = await response.json()
+
+    if (json.status === 'success') {
+      cycleNumber.value = json.cycle_number || (cycleNumber.value + 1)
+      diagnosticReport.value = json.diagnostic_report || ''
+      
+      const nowStr = json.timestamp || new Date().toLocaleTimeString()
+      cycleTimestamp.value = nowStr
+      lastReportTime.value = `CYCLE #${cycleNumber.value} (${nowStr})`
+
+      if (json.live_inputs) {
+        if (json.live_inputs.flow !== undefined) cycleFlow.value = json.live_inputs.flow
+        if (json.live_inputs.tds !== undefined) cycleTds.value = json.live_inputs.tds
+        if (json.live_inputs.quality !== undefined) cycleQuality.value = json.live_inputs.quality
+      }
+
+      // Update reasoning steps
+      if (Array.isArray(json.reasoning_steps) && json.reasoning_steps.length > 0) {
+        reasoningSteps.value = json.reasoning_steps
+      } else {
+        reasoningSteps.value = [
+          `[INGEST] Telemetry verified: Flow=${cycleFlow.value} m³/h, TDS=${cycleTds.value} ppm (${cycleQuality.value})`,
+          `[SOP] Cross-checked Vikings_Desalination_Plant_SOP.docx against active parameters`,
+          `[STATUS] Autonomous supervisor cycle evaluation verified`
+        ]
+      }
+
+      // Health & Badges based on quality
+      const q = (cycleQuality.value || '').toLowerCase()
+      if (q === 'good' || q === 'excellent') {
+        plantHealth.value = 'OPTIMAL'
+        plantHealthDotClass.value = ''
+        lastReportBadge.value = 'GRADE A - SOP OK'
+        lastReportBadgeClass.value = 'green'
+        cycleAlerts.value = 0
+        cycleActionTag.value = 'VERIFIED NORMAL'
+        cycleTagClass.value = 'green'
+      } else if (q === 'warning') {
+        plantHealth.value = 'WARNING'
+        plantHealthDotClass.value = 'dot-warn'
+        lastReportBadge.value = 'DOSING ADJUSTMENT'
+        lastReportBadgeClass.value = 'amber'
+        cycleAlerts.value = 1
+        cycleActionTag.value = 'DOSING CHECK'
+        cycleTagClass.value = 'amber'
+      } else {
+        plantHealth.value = 'DEGRADED'
+        plantHealthDotClass.value = 'dot-danger'
+        lastReportBadge.value = 'POOR - ACTION REQUIRED'
+        lastReportBadgeClass.value = 'red'
+        cycleAlerts.value = 2
+        cycleActionTag.value = 'CORRECTIVE ACTION'
+        cycleTagClass.value = 'red'
+      }
+      scadaLinkStatus.value = 'CONNECTED (PORT 502)'
+    } else {
+      // Plant error (e.g. PLC disconnected)
+      scadaLinkStatus.value = 'PLC DISCONNECTED'
+      plantHealth.value = 'OFFLINE'
+      plantHealthDotClass.value = 'dot-danger'
+      lastReportBadge.value = 'PLC DISCONNECTED'
+      lastReportBadgeClass.value = 'red'
+      cycleAlerts.value = 1
+      cycleActionTag.value = 'LINK RECONNECT'
+      cycleTagClass.value = 'red'
+      if (json.message) {
+        diagnosticReport.value = `[STATUS] ${json.message}`
+      }
+    }
+  } catch (err) {
+    scadaLinkStatus.value = 'NETWORK INTERRUPTION'
+  } finally {
+    isAgentRunning.value = false
+
+    // When the agent cycle completes:
+    // If countdown reached 0 (or was at 0), reset to the full interval duration and resume
+    if (countdownSeconds.value <= 0) {
+      const intervalSecs = (parseInt(selectedInterval.value) || 60) * 60
+      countdownSeconds.value = intervalSecs
+    }
+
+    // Synchronize localStorage target timestamp to resume countdown from current seconds
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + countdownSeconds.value * 1000))
+    }
+
+    const mins = Math.floor(countdownSeconds.value / 60)
+    const secs = countdownSeconds.value % 60
+    countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
+  }
+}
+
+// Persist interval changes to localStorage and adjust countdown
 watch(selectedInterval, (newVal) => {
-  countdownSeconds.value = parseInt(newVal) * 60
-  const mins = Math.floor(countdownSeconds.value / 60)
-  const secs = countdownSeconds.value % 60
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(INTERVAL_STORAGE_KEY, newVal)
+  }
+  const intervalSecs = (parseInt(newVal) || 60) * 60
+  countdownSeconds.value = intervalSecs
+  if (!eStopActive.value && typeof localStorage !== 'undefined') {
+    localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
+  }
+  const mins = Math.floor(intervalSecs / 60)
+  const secs = intervalSecs % 60
   countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
 })
 
@@ -651,20 +937,49 @@ const showRecentCycles = ref(false)
 
 const cycleMixerSpeed = () => {
   const speeds = [350, 420, 500, 280]
-  const currentIdx = speeds.indexOf(mixerRpm.value)
-  mixerRpm.value = speeds[(currentIdx + 1) % speeds.length]
 }
 
-const handleEmergencyStop = () => {
-  eStopActive.value = !eStopActive.value
-  if (eStopActive.value) {
-    pumpP101.value = false
-    feedP202.value = false
-    mixerRpm.value = 0
-  } else {
-    pumpP101.value = true
-    feedP202.value = true
-    mixerRpm.value = 350
+const handleEmergencyStop = async () => {
+  if (isEStopLoading.value) return
+  isEStopLoading.value = true
+
+  const endpoint = eStopActive.value ? '/api/plant/resume' : '/api/plant/emergency-stop'
+
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const json = await response.json()
+
+    if (json.status === 'success') {
+      eStopActive.value = !eStopActive.value
+      pumpP101.value = !eStopActive.value
+
+      const intervalSecs = (parseInt(selectedInterval.value) || 60) * 60
+      countdownSeconds.value = intervalSecs
+      const mins = Math.floor(intervalSecs / 60)
+      const secs = intervalSecs % 60
+      countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
+
+      if (eStopActive.value) {
+        // Plant is stopped: clear target timestamp so timer stays stopped and reset
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(TARGET_TIMESTAMP_KEY)
+        }
+      } else {
+        // Plant is resumed: start countdown fresh from full interval
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
+        }
+      }
+    } else {
+      console.error(json.message)
+    }
+  } catch (err) {
+    console.error('Failed to communicate with plant emergency controls:', err)
+  } finally {
+    isEStopLoading.value = false
   }
 }
 
@@ -675,33 +990,36 @@ const updateClock = () => {
   const ss = String(now.getSeconds()).padStart(2, '0')
   const ms = String(Math.floor(now.getMilliseconds() / 10)).padStart(2, '0')
   cycleClock.value = `${hh}:${mm}:${ss}.${ms}`
-
-  // Subtle real-time telemetry micro-fluctuations for authentic SCADA feel
-  if (!eStopActive.value) {
-    flowRate.value = 74.5 + (Math.sin(now.getTime() / 4000) * 0.4)
-    feedPressure.value = 4.8 + (Math.cos(now.getTime() / 5000) * 0.08)
-  }
 }
 
-const updateCountdown = () => {
+const updateCountdown = async () => {
+  // If plant is stopped (e-stop active) or agent is actively running, stop/freeze the timer
+  if (eStopActive.value || isAgentRunning.value) {
+    return
+  }
+
   if (countdownSeconds.value > 0) {
     countdownSeconds.value--
+    const mins = Math.floor(countdownSeconds.value / 60)
+    const secs = countdownSeconds.value % 60
+    countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
   } else {
-    countdownSeconds.value = parseInt(selectedInterval.value) * 60
+    // Reached 0 -> trigger agent run. Timer pauses while executing,
+    // and will reset & resume when triggerAutoRun finishes!
+    await triggerAutoRun()
   }
-  const mins = Math.floor(countdownSeconds.value / 60)
-  const secs = countdownSeconds.value % 60
-  countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
 }
 
 const exportExecutions = () => {
   const data = {
     plant: 'AQUASYNC SCADA - SWRO PLANT #04',
-    cycle: 142,
+    cycle: cycleNumber.value,
     timestamp: new Date().toISOString(),
-    pinn_prediction: { flow: '71.8 m³/h', tds: '288 ppm', confidence: '99.4%' },
-    lstm_prediction: { flow: '69.4 m³/h', tds: '312 ppm', confidence: '97.8%' },
+    pinn_prediction: { flow: `${alphaFlow.value || 71.8} m³/h`, tds: `${alphaTds.value ?? 'N/A'}`, confidence: alphaConfidence.value },
+    lstm_prediction: { flow: `${betaFlow.value ?? 'N/A'}`, tds: `${betaTds.value || 312} ppm`, confidence: betaConfidence.value },
     kalman_ensemble_confidence: '98.6%',
+    diagnostic_report: diagnosticReport.value,
+    reasoning_steps: reasoningSteps.value,
     telemetry: {
       flowRate: flowRate.value,
       salinityTds: salinityTds.value,
@@ -715,7 +1033,7 @@ const exportExecutions = () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `aquasync-cycle-142-${Date.now()}.json`
+  a.download = `aquasync-cycle-${cycleNumber.value}-${Date.now()}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -726,11 +1044,22 @@ onMounted(() => {
   clockTimer = setInterval(updateClock, 80)
   countdownTimer = setInterval(updateCountdown, 1000)
   updateClock()
+
+  fetchLiveTelemetry()
+  telemetryTimer = setInterval(fetchLiveTelemetry, 2000)
+
+  fetchLivePredictions()
+  predictTimer = setInterval(fetchLivePredictions, 2000)
+
+  // Run autonomous agent cycle on initial load
+  triggerAutoRun()
 })
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
   if (countdownTimer) clearInterval(countdownTimer)
+  if (telemetryTimer) clearInterval(telemetryTimer)
+  if (predictTimer) clearInterval(predictTimer)
 })
 </script>
 
@@ -785,6 +1114,21 @@ onUnmounted(() => {
   background: #10b981;
   box-shadow: 0 0 8px #10b981;
   animation: pulse-dot 1.5s infinite ease-in-out;
+}
+
+.pill-sim-mode.halted {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #f87171 !important;
+}
+
+.pulsing-red-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  animation: pulse-dot 1s infinite ease-in-out;
 }
 
 @keyframes pulse-dot {
@@ -886,14 +1230,18 @@ onUnmounted(() => {
 }
 
 .btn-e-stop.triggered {
-  background: #7f1d1d;
-  border-color: #991b1b;
-  animation: blink-stop 1s infinite;
+  background: #059669;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
-@keyframes blink-stop {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+.btn-e-stop.triggered:hover {
+  background: #10b981;
+}
+
+.btn-e-stop.loading {
+  opacity: 0.75;
+  cursor: wait;
 }
 
 /* 2. Scrollable Dashboard Body */
@@ -1220,6 +1568,38 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
+.badge-countdown.paused-running {
+  background: rgba(192, 132, 252, 0.15);
+  border-color: rgba(192, 132, 252, 0.4);
+  color: #c084fc;
+}
+
+.badge-countdown.halted-stopped {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #f87171 !important;
+}
+
+.running-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pulse-agent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c084fc;
+  box-shadow: 0 0 8px #c084fc;
+  animation: pulse-agent 1s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-agent {
+  from { opacity: 0.4; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
 .engine-info-note {
   display: flex;
   align-items: center;
@@ -1308,6 +1688,24 @@ onUnmounted(() => {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
   border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.beta-badge.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.beta-badge.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.beta-badge.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .model-tech-desc {
@@ -1846,6 +2244,96 @@ onUnmounted(() => {
   border-radius: 2px;
 }
 
+.diagnostic-report-card {
+  margin-top: 10px;
+  background: #080f1d;
+  border: 1px solid #142340;
+  border-radius: 4px;
+  padding: 10px 14px;
+}
+
+.diag-report-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #00e5ff;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.diag-report-header svg {
+  width: 14px;
+  height: 14px;
+}
+
+.diag-report-text {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.dot-warn {
+  background: #f59e0b !important;
+  box-shadow: 0 0 6px #f59e0b !important;
+}
+
+.dot-danger {
+  background: #ef4444 !important;
+  box-shadow: 0 0 6px #ef4444 !important;
+}
+
+.report-badge-status.amber {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.report-badge-status.red {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.report-check-box.error-box {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.cycle-tag-action.amber {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.cycle-tag-action.red {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.pulse-active {
+  animation: pulse-tag 1.2s infinite alternate;
+}
+
+@keyframes pulse-tag {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -2027,6 +2515,18 @@ onUnmounted(() => {
   color: #047857 !important;
 }
 
+[data-theme="light"] .pill-sim-mode.halted {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .btn-e-stop.triggered {
+  background: #059669 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
 [data-theme="light"] .equip-badge.green {
   background: #ecfdf5 !important;
   border-color: #10b981 !important;
@@ -2168,6 +2668,23 @@ onUnmounted(() => {
   color: #0284c7 !important;
 }
 
+[data-theme="light"] .badge-countdown.paused-running {
+  background: #f5f3ff !important;
+  border-color: #ddd6fe !important;
+  color: #7c3aed !important;
+}
+
+[data-theme="light"] .badge-countdown.halted-stopped {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .pulse-agent-dot {
+  background: #7c3aed !important;
+  box-shadow: 0 0 6px #7c3aed !important;
+}
+
 [data-theme="light"] .engine-info-note {
   color: #0284c7 !important;
 }
@@ -2209,6 +2726,24 @@ onUnmounted(() => {
   background: #faf5ff !important;
   color: #7c3aed !important;
   border-color: #e9d5ff !important;
+}
+
+[data-theme="light"] .beta-badge.green {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+
+[data-theme="light"] .beta-badge.amber {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+[data-theme="light"] .beta-badge.red {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
 }
 
 [data-theme="light"] .model-tech-desc {
@@ -2412,6 +2947,43 @@ onUnmounted(() => {
 
 [data-theme="light"] .cycle-alert-stat {
   color: #dc2626 !important;
+}
+
+[data-theme="light"] .diagnostic-report-card {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .diag-report-header {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .diag-report-text {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .report-badge-status.amber {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .report-badge-status.red {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .cycle-tag-action.amber {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .cycle-tag-action.red {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
 }
 
 /* 6. Modal Light */
@@ -2506,6 +3078,18 @@ onUnmounted(() => {
   color: #047857 !important;
 }
 
+[data-theme="light"] .pill-sim-mode.halted {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .btn-e-stop.triggered {
+  background: #059669 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
 [data-theme="light"] .equip-badge.green {
   background: #ecfdf5 !important;
   border-color: #10b981 !important;
@@ -2647,6 +3231,23 @@ onUnmounted(() => {
   color: #0284c7 !important;
 }
 
+[data-theme="light"] .badge-countdown.paused-running {
+  background: #f5f3ff !important;
+  border-color: #ddd6fe !important;
+  color: #7c3aed !important;
+}
+
+[data-theme="light"] .badge-countdown.halted-stopped {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .pulse-agent-dot {
+  background: #7c3aed !important;
+  box-shadow: 0 0 6px #7c3aed !important;
+}
+
 [data-theme="light"] .engine-info-note {
   color: #0284c7 !important;
 }
@@ -2688,6 +3289,24 @@ onUnmounted(() => {
   background: #faf5ff !important;
   color: #7c3aed !important;
   border-color: #e9d5ff !important;
+}
+
+[data-theme="light"] .beta-badge.green {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+
+[data-theme="light"] .beta-badge.amber {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+[data-theme="light"] .beta-badge.red {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
 }
 
 [data-theme="light"] .model-tech-desc {
@@ -2891,6 +3510,43 @@ onUnmounted(() => {
 
 [data-theme="light"] .cycle-alert-stat {
   color: #dc2626 !important;
+}
+
+[data-theme="light"] .diagnostic-report-card {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .diag-report-header {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .diag-report-text {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .report-badge-status.amber {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .report-badge-status.red {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .cycle-tag-action.amber {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .cycle-tag-action.red {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
 }
 
 /* 6. Modal Light */

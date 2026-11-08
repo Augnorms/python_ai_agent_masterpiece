@@ -1,14 +1,13 @@
 from openai.resources.beta.threads import messages
 from agent_folder.client import client
-from agent_folder.guardrails import is_prompt_injection, detect_math, did_use_math_previously
+from agent_folder.guardrails import is_prompt_injection
 from database.database import get_swarm_settings
 import json
 import time
 
 system_input = """
 You are an AI orchestrator assistant.
-You must ALWAYS use the available tools to perform calculations, look up weather, query user database records, or search company knowledge base documents (for company documentation, service plans, pricing, business plans, or employee policies). 
-NEVER do arithmetic or calculations in your head—always call the appropriate tool.
+You must ALWAYS use the available tools to look up weather, query user database records, or search company knowledge base documents (for company documentation, service plans, pricing, business plans, or employee policies).
 
 Before you call a tool, write out your reasoning:
 Thought: [Your reasoning]
@@ -86,18 +85,7 @@ def run_agent(
         #this is the final answer
         #if tool_call is empty then call the content
         if not tool_calls:
-            if use_guardrails:
-                # 2. GUARDRAIL: Did they ask for math, but NEVER use a math tool in the whole trace?
-                if detect_math(user_input) and not did_use_math_previously(messages):
-                    logger(f"[guardrail] violation — LLM tried to finish without using a math tool")
-
-                    messages.append({
-                        "role":"user",
-                        "content":"You did arithmetic without calling a tool. You must call the math tool (e.g. ask_math_agent or add). Do NOT calculate in your head. Retry."
-                    })
-                    continue # Reject the answer, force a retry
-
-                        # --- NEW: REFLECTION ---
+            # --- NEW: REFLECTION ---
             if not reflection_done:
                 logger("[reflection] Asking LLM to review its answer...")
                 messages.append({

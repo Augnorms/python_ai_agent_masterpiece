@@ -11,7 +11,12 @@ from api import (
     documents_router,
     reset_vector_db,
     vectordb_stats_router,
-    settings_router
+    settings_router,
+    get_live_telemetry,
+    get_live_prediction,
+    run_palnt_agent,
+    emergency_stop,
+    resume_plant
 )
 
 app = FastAPI()
@@ -36,3 +41,8 @@ app.include_router(documents_router)
 app.include_router(reset_vector_db)
 app.include_router(vectordb_stats_router)
 app.include_router(settings_router)
+app.include_router(get_live_telemetry)
+app.include_router(get_live_prediction)
+app.include_router(run_palnt_agent)
+app.include_router(emergency_stop)
+app.include_router(resume_plant)

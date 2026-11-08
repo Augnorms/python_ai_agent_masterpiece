@@ -60,7 +60,7 @@ def init_db():
             custom_model_id VARCHAR(255) DEFAULT '',
             temperature FLOAT DEFAULT 0.2,
             embedding_model VARCHAR(255) DEFAULT 'all-MiniLM-L6-v2',
-            active_agents JSONB DEFAULT '["rag_agent", "math_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb,
+            active_agents JSONB DEFAULT '["rag_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -83,7 +83,7 @@ def init_db():
             '',
             0.2,
             'all-MiniLM-L6-v2',
-            '["rag_agent", "math_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb
+            '["rag_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb
         ) ON CONFLICT (session_id) DO NOTHING;
     """)
 
@@ -235,32 +235,33 @@ def clear_document_chunks():
 
 def get_swarm_settings(session_id: str = "default") -> dict:
     """Retrieves the swarm settings for a given session_id from the database.
-    If no specific row exists for session_id, automatically falls back to the most 
+    If session_id is 'default' or not found, automatically falls back to the most 
     recently saved user configuration in swarm_settings."""
-    if not session_id:
-        session_id = "default"
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("SELECT * FROM swarm_settings WHERE session_id = %s", (session_id,))
-    row = cursor.fetchone()
+    
+    row = None
+    if session_id and session_id != "default":
+        cursor.execute("SELECT * FROM swarm_settings WHERE session_id = %s", (session_id,))
+        row = cursor.fetchone()
 
-    # If no row exists for this exact session_id, fall back to the most recently saved settings
+    # If no row exists for this session or if requesting 'default', fall back to the most recently updated settings
     if not row:
-        cursor.execute("SELECT * FROM swarm_settings ORDER BY updated_at DESC LIMIT 1")
+        cursor.execute("SELECT * FROM swarm_settings ORDER BY updated_at DESC NULLS LAST LIMIT 1")
         row = cursor.fetchone()
 
     # If table is completely empty, supply robust default configuration
     if not row:
         row = {
-            "session_id": session_id,
+            "session_id": session_id or "default",
             "is_swarm_active": True,
             "swarm_mode": "autonomous",
             "max_steps": 10,
-            "supervisor_model": "openai/gpt-oss-120b",
+            "supervisor_model": "openai/gpt-oss-20b",
             "custom_model_id": "",
             "temperature": 0.2,
             "embedding_model": "all-MiniLM-L6-v2",
-            "active_agents": ["rag_agent", "math_agent", "database_agent", "weather_agent", "email_agent"],
+            "active_agents": ["rag_agent", "database_agent", "weather_agent", "email_agent"],
             "updated_at": None
         }
 
@@ -295,7 +296,7 @@ def update_swarm_settings(
     # Ensure the row exists for this session_id first
     cursor.execute("""
         INSERT INTO swarm_settings (session_id, is_swarm_active, swarm_mode, max_steps, supervisor_model, custom_model_id, temperature, embedding_model, active_agents)
-        VALUES (%s, TRUE, 'autonomous', 10, 'openai/gpt-oss-120b', '', 0.2, 'all-MiniLM-L6-v2', '["rag_agent", "math_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb)
+        VALUES (%s, TRUE, 'autonomous', 10, 'openai/gpt-oss-120b', '', 0.2, 'all-MiniLM-L6-v2', '["rag_agent", "database_agent", "weather_agent", "email_agent"]'::jsonb)
         ON CONFLICT (session_id) DO NOTHING
     """, (session_id,))
     conn.commit()
@@ -336,8 +337,12 @@ def update_swarm_settings(
         params.append(session_id)
         query = f"UPDATE swarm_settings SET {', '.join(update_fields)} WHERE session_id = %s RETURNING *"
         cursor.execute(query, tuple(params))
-        conn.commit()
         row = cursor.fetchone()
+        if session_id != "default":
+            # Also keep the 'default' session row synchronized with latest global settings
+            default_params = list(params[:-1]) + ["default"]
+            cursor.execute(query, tuple(default_params))
+        conn.commit()
     else:
         cursor.execute("SELECT * FROM swarm_settings WHERE session_id = %s", (session_id,))
         row = cursor.fetchone()

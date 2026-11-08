@@ -4,8 +4,8 @@ import datetime
 from database.database import get_all_users, delete_user, keyword_search_chunks
 import chromadb
 from sentence_transformers import SentenceTransformer
-
 from inject_rag.ingest_rag_service import get_embedding_model
+from ml_service import predict_live_status
 
 #connect to chroma database using client
 chroma_client = chromadb.HttpClient(host='localhost', port=8001)
@@ -14,55 +14,6 @@ chroma_client = chromadb.HttpClient(host='localhost', port=8001)
 collection = chroma_client.get_or_create_collection(name="company_docs")
 embedding_model = get_embedding_model("default")
 
-
-MATH_TOOLS_SCHEMA  = [
-    {
-        "type":"function",
-        "function":{
-            "name":"add",
-            "description":"A function to add two numbers",
-            "parameters":{
-                "type":"object",
-                "properties":{
-                   "a":{"type":"number"},
-                   "b":{"type":"number"}
-                },
-                "required":["a", "b"]
-            }
-        }
-    },
-    {
-        "type":"function",
-        "function":{
-            "name":"multiply",
-            "description":"A function to multiply two numbers",
-            "parameters":{
-                "type":"object",
-                "properties":{
-                   "a":{"type":"number"},
-                   "b":{"type":"number"}
-                },
-                "required":["a", "b"]
-            }
-        }
-    },
-    {
-        "type":"function",
-        "function":{
-            "name":"substraction",
-            "description":"A function to substract two numbers",
-            "parameters":{
-                "type":"object",
-                "properties":{
-                    "a":{"type":"number"},
-                    "b":{"type":"number"}
-                },
-                "required":["a", "b"]
-            }
-        }
-    },
-
-]
 
 WEATHER_TOOLS_SCHEMA = [
         {
@@ -148,32 +99,23 @@ RAG_TOOL_SCHEMA = [
     }
 ]
 
-def add(a, b):
-    """ function to add two numbers  """
-    return a + b
 
-def multiply(a, b):
-    """ function to multiple numbers """
-    return a * b
+PREDICTION_TOOL_SCHEMA = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_plant_predictions",
+            "description": "Get the current predicted Permeate Flow and TDS based on live sensor data.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    }
+]
 
-def substraction(a, b):
-    """function to substract numbers"""
-    return a - b
 
-# def get_weather(city):
-#     """ function to get the weather of a city """
-#     weather = {
-#         "Wilmington": "Sunny, 10°C",
-#         "Los Angeles": "Rainy, 30°C",
-#         "New York": "Cloudy, 15°C",
-#         "London": "Rainy, 12°C",
-#         "Paris": "Windy, 14°C",
-#         "Tokyo": "Sunny, 22°C",
-#         "Sydney": "Sunny, 25°C",
-#         "Dubai": "Sunny, 38°C",
-#         "Accra": "Cloudy, 29°C",
-#         "Cairo": "Sunny, 33°C",
-#     }
 
 def send_email(to_address: str, subject: str, body: str):
     """A mock function to send an email and write it to a log file."""
@@ -254,13 +196,26 @@ def get_weather(city):
     return f"{city}: " + weather.get(city.title(), "No data available")
 
 
+def get_plant_predictions():
+    """Runs the ML models on live Modbus data and returns the current plant status."""
+    result = predict_live_status()
+    if result["status"] == "error":
+        return f"Error: {result['message']}"
+    
+    preds = result["predictions"]
+    flow = preds["alpha"]["flow"]
+    tds = preds["beta"]["tds"]
+    quality = preds["beta"]["quality_status"]
+    
+    return f"Live Plant Status:\n- Predicted Permeate Flow: {flow} m3/h\n- Predicted Permeate TDS: {tds} ppm\n- Water Quality: {quality}"
+
+
+
 TOOL_FUNCTION = {
-    "add":add,
-    "multiply":multiply,
-    "substraction":substraction,
     "get_weather": get_weather,
     "get_all_users": get_all_users,
     "delete_user": delete_user,
     "send_email": send_email,
     "search_company_docs": search_company_docs,
+    "get_plant_predictions": get_plant_predictions
 }

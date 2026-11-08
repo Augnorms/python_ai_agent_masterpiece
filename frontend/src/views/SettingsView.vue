@@ -78,7 +78,7 @@
               <div class="toggle-info">
                 <label class="toggle-title" for="swarm-active-toggle">Enable Autonomous Swarm</label>
                 <p class="toggle-desc">
-                  When enabled, the orchestrator routes tasks across specialized sub-agents (Math, Weather, Database, Email, and RAG Knowledge Base).
+                  When enabled, the orchestrator routes tasks across specialized sub-agents (Weather, Database, Email, and RAG Knowledge Base).
                 </p>
               </div>
 
@@ -326,13 +326,6 @@ const availableAgents = ref([
     name: 'Knowledge RAG Agent',
     badge: 'KNOWLEDGE & DOCS',
     description: 'Searches ChromaDB vector collection for company policies, specs, and knowledge articles.',
-    enabled: true
-  },
-  {
-    id: 'math_agent',
-    name: 'Math Calculator Agent',
-    badge: 'ARITHMETIC & LOGIC',
-    description: 'Executes deterministic calculation operations and prevents LLM hallucination.',
     enabled: true
   },
   {

@@ -675,12 +675,13 @@ const handleDrop = (event) => {
 
 /* Header */
 .rag-header {
-  padding: 16px 24px;
+  padding: 10px 24px;
   background: rgba(10, 16, 29, 0.6);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .cluster-badge {
@@ -805,31 +806,33 @@ const handleDrop = (event) => {
   height: 14px;
 }
 
-/* Scrollable Content */
+/* Content Area - Fixed viewport container without outer scrolling */
 .rag-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 18px 24px;
+  overflow: hidden;
+  padding: 10px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
+  min-height: 0;
 }
 
 /* 4 Metric Cards */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .metric-card {
   background: rgba(13, 21, 39, 0.6);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .metric-top {
@@ -922,7 +925,8 @@ const handleDrop = (event) => {
 .pipeline-grid {
   display: grid;
   grid-template-columns: 380px 1fr;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .pipeline-card {
@@ -935,7 +939,7 @@ const handleDrop = (event) => {
 }
 
 .pipeline-card-header {
-  padding: 12px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -984,7 +988,7 @@ const handleDrop = (event) => {
 }
 
 .dropzone-area {
-  padding: 28px 16px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -992,8 +996,8 @@ const handleDrop = (event) => {
 }
 
 .drop-icon-circle {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(0, 229, 255, 0.08);
   border: 1px dashed rgba(0, 229, 255, 0.4);
@@ -1001,11 +1005,11 @@ const handleDrop = (event) => {
   align-items: center;
   justify-content: center;
   color: var(--primary-cyan);
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 .drop-icon-circle svg {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
 }
 
 .drop-title {
@@ -1029,7 +1033,7 @@ const handleDrop = (event) => {
   flex-wrap: wrap;
   gap: 5px;
   justify-content: center;
-  margin-top: 14px;
+  margin-top: 6px;
 }
 
 .fmt {
@@ -1149,6 +1153,10 @@ const handleDrop = (event) => {
 
 /* Data Table */
 .table-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: rgba(13, 21, 39, 0.6);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -1156,11 +1164,12 @@ const handleDrop = (event) => {
 }
 
 .table-filter-bar {
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .search-input-box {
@@ -1228,7 +1237,25 @@ const handleDrop = (event) => {
 .export-btn svg { width: 13px; height: 13px; }
 
 .table-responsive {
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: auto;
+}
+
+.table-responsive::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: rgba(10, 16, 31, 0.4);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.2);
+  border-radius: 3px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.4);
 }
 
 .docs-table {
@@ -1239,16 +1266,20 @@ const handleDrop = (event) => {
 }
 
 .docs-table th {
-  padding: 10px 16px;
+  padding: 8px 16px;
   font-size: 9px;
   font-weight: 700;
   color: var(--text-dim);
   border-bottom: 1px solid var(--border-color);
   letter-spacing: 0.8px;
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 2;
 }
 
 .docs-table td {
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid rgba(23, 36, 60, 0.4);
 }
 
@@ -1414,7 +1445,7 @@ const handleDrop = (event) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 36px 16px;
+  padding: 14px 16px;
   color: var(--text-dim);
   font-size: 11px;
   font-family: var(--font-mono);

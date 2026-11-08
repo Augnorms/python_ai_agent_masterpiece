@@ -2,99 +2,19 @@
   <div class="scada-container">
     <!-- Top SCADA Plant Header Ribbon -->
     <div class="scada-header-ribbon">
-      <div class="ribbon-brand-section">
-        <div class="brand-droplet-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="#00e5ff" stroke="#00e5ff" />
-          </svg>
-        </div>
-        <div class="brand-titles">
-          <span class="brand-primary">AQUASYNC SCADA</span>
-          <span class="brand-sub">SWRO PLANT #04</span>
-        </div>
-      </div>
 
       <!-- Top Network Status Indicators -->
       <div class="ribbon-center-cluster">
-        <div class="status-box">
-          <div class="status-top">
-            <span class="dot-online"></span>
-            <span class="status-name">OPC-UA:</span>
-            <span class="status-state">ONLINE (3ms)</span>
-          </div>
-        </div>
 
         <div class="status-box active-modbus">
           <div class="status-top">
-            <span class="dot-online"></span>
+            <span :class="plcConnected ? 'dot-online' : 'dot-offline'"></span>
             <span class="status-name">MODBUS TCP:</span>
-            <span class="status-state highlight">SLAVE #01 OK</span>
-          </div>
-        </div>
-
-        <div class="alarm-banner-box">
-          <span class="alarm-banner-label">ACTIVE ALARM BANNER</span>
-          <div class="alarm-banner-text">
-            <span class="dot-online"></span>
-            <span class="alarm-msg">SYS NORMAL - ALL STAGES WITHIN PERMISSIBLE THRESHOLDS</span>
+            <span class="status-state highlight">{{ modbusStatusDisplay }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Mode Toggles, E-Stop and Profile -->
-      <div class="ribbon-right-cluster">
-        <div class="mode-toggle-group">
-          <button 
-            type="button" 
-            class="mode-btn" 
-            :class="{ active: currentMode === 'AUTO' }" 
-            @click="currentMode = 'AUTO'"
-          >
-            AUTO
-          </button>
-          <button 
-            type="button" 
-            class="mode-btn" 
-            :class="{ active: currentMode === 'MANUAL' }" 
-            @click="currentMode = 'MANUAL'"
-          >
-            MANUAL
-          </button>
-          <button 
-            type="button" 
-            class="mode-btn" 
-            :class="{ active: currentMode === 'SIM' }" 
-            @click="currentMode = 'SIM'"
-          >
-            SIM
-          </button>
-        </div>
-
-        <button 
-          type="button" 
-          class="btn-estop-armed" 
-          :class="{ triggered: eStopTriggered }"
-          @click="toggleEStop"
-          title="Emergency Stop"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <div class="estop-labels">
-            <span class="estop-main">E-STOP:</span>
-            <span class="estop-sub">{{ eStopTriggered ? 'TRIGGERED' : 'ARMED' }}</span>
-          </div>
-        </button>
-
-        <div class="profile-avatar-btn" title="SCADA Operator: Eng. Kwame Mensah">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </div>
-      </div>
     </div>
 
     <!-- Main Scrollable Content -->
@@ -103,39 +23,13 @@
       <div class="modbus-conn-ribbon">
         <div class="conn-left-items">
           <div class="conn-badge">
-            <span class="pulsing-green-dot"></span>
-            <span class="conn-title font-mono">MODBUS TCP: CONNECTED (192.168.1.105:502)</span>
+            <span :class="plcConnected ? 'pulsing-green-dot' : 'pulsing-red-dot'"></span>
+            <span class="conn-title font-mono">MODBUS TCP CONNECTED TO:  {{ modbusConnectionDisplay }}</span>
           </div>
 
-          <div class="conn-meta-item">
-            <span class="meta-label">SLAVE ID:</span>
-            <span class="meta-value font-mono">#01 (SWRO-PLC-RACK)</span>
-          </div>
-
-          <div class="conn-meta-item">
-            <span class="meta-label">POLL RATE:</span>
-            <span class="meta-value font-mono cyan-text">{{ pollRate }} ms</span>
-          </div>
-
-          <div class="conn-meta-item">
-            <span class="meta-label">JITTER:</span>
-            <span class="meta-value font-mono cyan-text">{{ jitter.toFixed(1) }} ms</span>
-          </div>
         </div>
 
         <div class="conn-right-items">
-          <div class="conn-meta-item">
-            <span class="meta-label">CRC ERRORS:</span>
-            <span class="meta-value font-mono green-text">0 (0.00%)</span>
-          </div>
-
-          <div class="conn-meta-item watchdog-item">
-            <span class="meta-label">WATCHDOG:</span>
-            <span class="watchdog-pill">
-              <span class="small-green-dot"></span>
-              ACTIVE
-            </span>
-          </div>
 
           <button type="button" class="btn-tool-export" @click="exportRegistersCsv">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -146,59 +40,6 @@
             <span>EXPORT CSV</span>
           </button>
 
-          <button type="button" class="btn-tool-pcap" @click="showPcapModal = true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-              <line x1="12" y1="17" x2="12" y2="21" />
-            </svg>
-            <span>PCAP TRACE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 6 Network Protocol KPI Cards -->
-      <div class="kpi-metrics-grid">
-        <!-- 1. Total Frames -->
-        <div class="metric-card">
-          <div class="metric-title">TOTAL FRAMES TX/RX</div>
-          <div class="metric-value font-mono">{{ totalFrames.toLocaleString() }}</div>
-          <div class="metric-subtext green-text font-mono">0 PACKET DROPS</div>
-        </div>
-
-        <!-- 2. Mean Latency -->
-        <div class="metric-card">
-          <div class="metric-title">MEAN LATENCY</div>
-          <div class="metric-value cyan-text font-mono">{{ meanLatency.toFixed(2) }} ms</div>
-          <div class="metric-subtext dim-text font-mono">σ = 0.38 ms</div>
-        </div>
-
-        <!-- 3. FC03 Read Holding -->
-        <div class="metric-card">
-          <div class="metric-title">FC03 (READ HOLDING)</div>
-          <div class="metric-value cyan-blue-text font-mono">92.4%</div>
-          <div class="metric-subtext dim-cyan-text font-mono">{{ fc03Requests.toLocaleString() }} REQS</div>
-        </div>
-
-        <!-- 4. FC06 / FC16 Writes -->
-        <div class="metric-card">
-          <div class="metric-title">FC06 / FC16 (WRITES)</div>
-          <div class="metric-value purple-text font-mono">7.6%</div>
-          <div class="metric-subtext dim-purple-text font-mono">{{ fcWrites.toLocaleString() }} COMMANDS</div>
-        </div>
-
-        <!-- 5. Exception Responses -->
-        <div class="metric-card">
-          <div class="metric-title">EXCEPTION RESPONSES</div>
-          <div class="metric-value green-text font-mono">0</div>
-          <div class="metric-subtext dim-text font-mono">LAST: 72H CLEAN</div>
-        </div>
-
-        <!-- 6. Socket Buffer Usage -->
-        <div class="metric-card">
-          <div class="metric-title">SOCKET BUFFER USAGE</div>
-          <div class="metric-value cyan-text font-mono">14.2%</div>
-          <div class="metric-subtext dim-text font-mono">64 KB TCP WINDOW</div>
         </div>
       </div>
 
@@ -215,7 +56,7 @@
             <div>
               <h3 class="table-title">MODBUS REGISTER MAPPING & LIVE POLLING TABLE</h3>
               <p class="table-sub-info font-mono">
-                Holding Registers (40001 - 40024) | Input Registers (30001 - 30016) | Coils (00001 - 00008)
+                Holding Registers ({{ holdingCount }}) | Input Registers ({{ inputCount }}) | Coils ({{ coilCount }})
               </p>
             </div>
           </div>
@@ -273,8 +114,8 @@
           </div>
 
           <div class="table-live-indicator">
-            <span class="pulsing-green-dot"></span>
-            <span class="indicator-text font-mono">CYCLE SCAN: {{ scanCycleClock }}</span>
+            <span :class="plcConnected ? 'pulsing-green-dot' : 'pulsing-red-dot'"></span>
+            <span class="indicator-text font-mono">CYCLE SCAN: {{ lastScanTime || '--:--:--' }}</span>
           </div>
         </div>
 
@@ -291,7 +132,6 @@
                 <th class="col-units">ENG. UNITS</th>
                 <th class="col-scan">SCAN TIME</th>
                 <th class="col-health">HEALTH</th>
-                <th class="col-action">OVERRIDE</th>
               </tr>
             </thead>
             <tbody>
@@ -344,30 +184,6 @@
                     <span class="health-label font-mono">{{ reg.health }}</span>
                   </div>
                 </td>
-
-                <!-- 9. Override Action Button -->
-                <td class="col-action action-cell">
-                  <button 
-                    v-if="reg.category === 'HOLDING'" 
-                    type="button" 
-                    class="btn-table-action btn-write font-mono"
-                    @click="openWriteModal(reg)"
-                  >
-                    WRITE
-                  </button>
-
-                  <button 
-                    v-else-if="reg.category === 'COIL'" 
-                    type="button" 
-                    class="btn-table-action btn-force font-mono"
-                    :class="{ 'btn-force-active': reg.scaledValue === 'TRUE' }"
-                    @click="toggleCoil(reg)"
-                  >
-                    FORCE
-                  </button>
-
-                  <span v-else class="read-only-tag font-mono">READ ONLY</span>
-                </td>
               </tr>
 
               <tr v-if="filteredRegisters.length === 0">
@@ -381,132 +197,42 @@
       </section>
     </div>
 
-    <!-- Modal 1: Write Modbus Holding Register Modal -->
-    <div v-if="showWriteModal && selectedRegister" class="modal-overlay" @click.self="showWriteModal = false">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="modal-icon">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            <div>
-              <h3>FC06 Modbus Register Write</h3>
-              <p class="modal-sub font-mono">Target: [{{ selectedRegister.address }}] {{ selectedRegister.name }}</p>
-            </div>
-          </div>
-          <button class="modal-close-btn" @click="showWriteModal = false">&times;</button>
-        </div>
 
-        <div class="modal-body">
-          <div class="write-meta-grid font-mono">
-            <div class="meta-box">
-              <span class="m-label">SLAVE ADDRESS:</span>
-              <span class="m-val cyan-text">#01 (192.168.1.105:502)</span>
-            </div>
-            <div class="meta-box">
-              <span class="m-label">REGISTER ADDR:</span>
-              <span class="m-val font-bold">{{ selectedRegister.address }}</span>
-            </div>
-            <div class="meta-box">
-              <span class="m-label">DATA FORMAT:</span>
-              <span class="m-val">{{ selectedRegister.dataType }}</span>
-            </div>
-            <div class="meta-box">
-              <span class="m-label">CURRENT VALUE:</span>
-              <span class="m-val green-text font-bold">{{ selectedRegister.scaledValue }} {{ selectedRegister.units }}</span>
-            </div>
-          </div>
 
-          <div class="form-group-write">
-            <label class="input-label">New Scaled Value ({{ selectedRegister.units }})</label>
-            <div class="input-inline-wrap">
-              <input 
-                v-model="newScaledInput" 
-                type="number" 
-                step="any"
-                class="write-input font-mono" 
-                placeholder="Enter new value..."
-                @input="calculateRawHexPreview"
-              />
-              <span class="unit-suffix font-mono">{{ selectedRegister.units }}</span>
-            </div>
-            <div class="calc-hex-preview font-mono">
-              <span>Calculated Raw INT: <strong>{{ calculatedRawInt }}</strong></span>
-              <span>Calculated Hex: <strong class="cyan-text">{{ calculatedRawHex }}</strong></span>
-            </div>
-          </div>
-
-          <div v-if="writeSuccessMsg" class="success-alert font-mono">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>{{ writeSuccessMsg }}</span>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn-cancel font-mono" @click="showWriteModal = false">Cancel</button>
-          <button type="button" class="btn-send-write font-mono" @click="executeRegisterWrite">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-            TRANSMIT FC06 WRITE
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 2: PCAP Packet Trace Modal -->
-    <div v-if="showPcapModal" class="modal-overlay" @click.self="showPcapModal = false">
-      <div class="modal-card pcap-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="modal-icon cyan-text">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-              <line x1="12" y1="17" x2="12" y2="21" />
-            </svg>
-            <div>
-              <h3>Modbus TCP Live Packet Sniffer / PCAP Stream</h3>
-              <p class="modal-sub font-mono">Capture buffer: 192.168.1.105:502 (Slave #01)</p>
-            </div>
-          </div>
-          <button class="modal-close-btn" @click="showPcapModal = false">&times;</button>
-        </div>
-
-        <div class="modal-body pcap-body font-mono">
-          <div class="pcap-log-list">
-            <div 
-              v-for="(pkt, idx) in pcapPackets" 
-              :key="idx" 
-              class="pcap-row" 
-              :class="pkt.dir === 'TX' ? 'pcap-tx' : 'pcap-rx'"
-            >
-              <span class="pcap-time">{{ pkt.time }}</span>
-              <span class="pcap-dir-badge" :class="pkt.dir === 'TX' ? 'badge-tx' : 'badge-rx'">{{ pkt.dir }}</span>
-              <span class="pcap-fc">{{ pkt.fc }}</span>
-              <span class="pcap-desc">{{ pkt.desc }}</span>
-              <span class="pcap-hex">{{ pkt.hex }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn-cancel font-mono" @click="pcapPackets = []">Clear Stream</button>
-          <button type="button" class="btn-primary font-mono" @click="showPcapModal = false">Close Monitor</button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+// ─── Backend API Base URL ───────────────────────────────────────
+const API_BASE = 'http://localhost:8000'
+
 // Top Bar States
 const currentMode = ref('AUTO')
 const eStopTriggered = ref(false)
+const plcConnected = ref(false)
+const telemetryError = ref('')
+const modbusConnection = ref('')
+const modbusStatus = ref(null)
+const lastScanTime = ref('')
+
+const modbusStatusDisplay = computed(() => {
+  if (typeof modbusStatus.value === 'string' && modbusStatus.value) {
+    return modbusStatus.value
+  }
+  if (modbusStatus.value === true || plcConnected.value) {
+    return 'SLAVE #01 OK'
+  }
+  return 'OFFLINE'
+})
+
+const modbusConnectionDisplay = computed(() => {
+  if (modbusConnection.value) {
+    return modbusConnection.value
+  }
+  return plcConnected.value ? '127.0.0.1:502' : 'OFFLINE'
+})
 
 const toggleEStop = () => {
   eStopTriggered.value = !eStopTriggered.value
@@ -515,11 +241,10 @@ const toggleEStop = () => {
 // Connection Metrics
 const pollRate = ref(50)
 const jitter = ref(1.2)
-const totalFrames = ref(1842910)
-const meanLatency = ref(2.41)
-const fc03Requests = ref(1702848)
-const fcWrites = ref(140062)
-const scanCycleClock = ref('14:48:22.050')
+const totalFrames = ref(0)
+const meanLatency = ref(0)
+const fc03Requests = ref(0)
+const fcWrites = ref(0)
 
 // Filters and Search
 const activeFilter = ref('ALL')
@@ -534,229 +259,141 @@ const calculatedRawInt = ref(0)
 const calculatedRawHex = ref('0x0000')
 const writeSuccessMsg = ref('')
 
-// Modbus Register Mapping Table Dataset (Exact from user's screen + extended for tabs)
-const registers = ref([
-  {
-    address: '40001',
-    category: 'HOLDING',
-    name: 'Feed Pressure (PT-202)',
-    identifier: '',
-    dataType: 'INT16 (x10)',
-    scaleFactor: 10,
-    rawInt: 48,
-    rawHex: '0x0030 (48)',
-    scaledValue: 4.8,
-    units: 'bar',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40002',
-    category: 'HOLDING',
-    name: 'Pump P-101 Current (CT-101)',
-    identifier: '',
-    dataType: 'INT16 (x10)',
-    scaleFactor: 10,
-    rawInt: 245,
-    rawHex: '0x00F5 (245)',
-    scaledValue: 24.5,
-    units: 'A',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40003',
-    category: 'HOLDING',
-    name: 'Suction Temperature (TT-101)',
-    identifier: '',
-    dataType: 'INT16 (x10)',
-    scaleFactor: 10,
-    rawInt: 260,
-    rawHex: '0x0104 (260)',
-    scaledValue: 26.0,
-    units: '°C',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40004',
-    category: 'HOLDING',
-    name: 'Permeate Conductivity (AT-301)',
-    identifier: '',
-    dataType: 'INT16 (x1)',
-    scaleFactor: 1,
-    rawInt: 1278,
-    rawHex: '0x04FE (1278)',
-    scaledValue: 1278,
-    units: 'µS/cm',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40005',
-    category: 'HOLDING',
-    name: 'Permeate TDS Sensor A (TDS-401)',
-    identifier: '',
-    dataType: 'INT16 (x1)',
-    scaleFactor: 1,
-    rawInt: 818,
-    rawHex: '0x0332 (818)',
-    scaledValue: 818,
-    units: 'ppm',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40006',
-    category: 'HOLDING',
-    name: 'Tank Level TK-201 (LT-201)',
-    identifier: '',
-    dataType: 'INT16 (x1)',
-    scaleFactor: 1,
-    rawInt: 30,
-    rawHex: '0x001E (30)',
-    scaledValue: 30,
-    units: '%',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '40007',
-    category: 'HOLDING',
-    name: 'Membrane DP Filter (DPT-301)',
-    identifier: '',
-    dataType: 'INT16 (x100)',
-    scaleFactor: 100,
-    rawInt: 18,
-    rawHex: '0x0012 (18)',
-    scaledValue: 0.18,
-    units: 'bar',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '30001',
-    category: 'INPUT',
-    name: 'Raw Sea Water Inflow (FIT-101)',
-    identifier: '',
-    dataType: 'INT16 (x10)',
-    scaleFactor: 10,
-    rawInt: 745,
-    rawHex: '0x02E9 (745)',
-    scaledValue: 74.5,
-    units: 'm³/h',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '30002',
-    category: 'INPUT',
-    name: 'Feed ORP Potential (AT-202)',
-    identifier: '',
-    dataType: 'INT16 (x1)',
-    scaleFactor: 1,
-    rawInt: 300,
-    rawHex: '0x012C (300)',
-    scaledValue: 300,
-    units: 'mV',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '30003',
-    category: 'INPUT',
-    name: 'High-Pressure Stage 1 (PT-301)',
-    identifier: '',
-    dataType: 'INT16 (x10)',
-    scaleFactor: 10,
-    rawInt: 580,
-    rawHex: '0x0244 (580)',
-    scaledValue: 58.0,
-    units: 'bar',
-    scanTime: '50 ms',
-    health: 'GOOD',
-    isUpdated: false
-  },
-  {
-    address: '00001',
-    category: 'COIL',
-    name: 'Pump P-101 Run Command',
-    identifier: '',
-    dataType: 'COIL (BIT)',
-    scaleFactor: 1,
-    rawInt: 1,
-    rawHex: '0x01 (1)',
-    scaledValue: 'TRUE',
-    units: 'BOOL',
-    scanTime: '20 ms',
-    health: 'ACTIVE',
-    isUpdated: false
-  },
-  {
-    address: '00002',
-    category: 'COIL',
-    name: 'Pump P-202 HP Run Command',
-    identifier: '',
-    dataType: 'COIL (BIT)',
-    scaleFactor: 1,
-    rawInt: 1,
-    rawHex: '0x01 (1)',
-    scaledValue: 'TRUE',
-    units: 'BOOL',
-    scanTime: '20 ms',
-    health: 'ACTIVE',
-    isUpdated: false
-  },
-  {
-    address: '00003',
-    category: 'COIL',
-    name: 'Chemical Dosing Pump DP-101',
-    identifier: '',
-    dataType: 'COIL (BIT)',
-    scaleFactor: 1,
-    rawInt: 1,
-    rawHex: '0x01 (1)',
-    scaledValue: 'TRUE',
-    units: 'BOOL',
-    scanTime: '20 ms',
-    health: 'ACTIVE',
-    isUpdated: false
-  },
-  {
-    address: '00004',
-    category: 'COIL',
-    name: 'RO Flush Valve SV-401',
-    identifier: '',
-    dataType: 'COIL (BIT)',
-    scaleFactor: 1,
-    rawInt: 0,
-    rawHex: '0x00 (0)',
-    scaledValue: 'FALSE',
-    units: 'BOOL',
-    scanTime: '20 ms',
-    health: 'ACTIVE',
-    isUpdated: false
-  }
-])
+// PCAP Packet Trace Log
+const pcapPackets = ref([])
 
-// PCAP Sample Frames Stream
-const pcapPackets = ref([
-  { time: '14:48:21.840', dir: 'TX', fc: 'FC03', desc: 'Read Holding Regs [40001 - 40007]', hex: '00 01 00 00 00 06 01 03 9C 41 00 07' },
-  { time: '14:48:21.842', dir: 'RX', fc: 'FC03', desc: 'Read Holding Response (14 bytes)', hex: '00 01 00 00 00 11 01 03 0E 00 30 00 F5 01 04 04 FE 03 32 00 1E 00 12' },
-  { time: '14:48:21.890', dir: 'TX', fc: 'FC01', desc: 'Read Coils [00001 - 00004]', hex: '00 02 00 00 00 06 01 01 00 01 00 04' },
-  { time: '14:48:21.893', dir: 'RX', fc: 'FC01', desc: 'Read Coils Response (1 byte: 0x07)', hex: '00 02 00 00 00 04 01 01 01 07' },
-  { time: '14:48:21.940', dir: 'TX', fc: 'FC04', desc: 'Read Input Regs [30001 - 30003]', hex: '00 03 00 00 00 06 01 04 75 31 00 03' },
-  { time: '14:48:21.943', dir: 'RX', fc: 'FC04', desc: 'Read Input Response (6 bytes)', hex: '00 03 00 00 00 09 01 04 06 02 E9 01 2C 02 44' }
-])
+// Modbus Register Mapping Table Dataset
+const registers = ref([])
+
+// ─── Scale factor lookup for converting scaled → raw values ─────
+const SCALE_FACTORS = {
+  '40001': 10,  // Feed Flowrate (x10)
+  '40002': 1,   // Feed TDS
+  '40003': 10,  // Feed Temperature (x10)
+  '40007': 10,  // Feed Salinity (x10)
+  '40008': 10,  // Recovery (x10)
+  '40009': 10,  // Flux (x10)
+  '40010': 10,  // Pressure Drop (x10)
+}
+
+// ─── Register category counts (for subtitle) ───────────────────
+const holdingCount = computed(() => registers.value.filter(r => r.category === 'HOLDING').length)
+const inputCount = computed(() => registers.value.filter(r => r.category === 'INPUT').length)
+const coilCount = computed(() => registers.value.filter(r => r.category === 'COIL').length)
+
+// ─── Map backend row → frontend register object ────────────────
+const mapBackendRow = (row) => {
+  const rawInt = row.raw
+  const hex = (rawInt & 0xffff).toString(16).toUpperCase().padStart(4, '0')
+  return {
+    address: row.address,
+    name: row.tag,
+    identifier: '',
+    dataType: row.type,
+    rawInt: rawInt,
+    rawHex: `0x${hex} (${rawInt})`,
+    scaledValue: row.scaled,
+    units: row.unit,
+    scaleFactor: SCALE_FACTORS[row.address] || 1,
+    scanTime: '50 ms',
+    health: row.health || 'GOOD',
+    category: 'HOLDING',
+    isUpdated: false,
+  }
+}
+
+// ─── Fetch Live Telemetry from Backend ──────────────────────────
+const fetchTelemetry = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/api/telemetry/live`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const json = await response.json()
+
+    if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
+      plcConnected.value = json.modbus_status !== false
+      if (json.modbus_status !== undefined) {
+        modbusStatus.value = json.modbus_status
+      } else {
+        modbusStatus.value = true
+      }
+      if (json.modbus_connection) {
+        modbusConnection.value = json.modbus_connection
+      }
+      telemetryError.value = ''
+
+      // Record cycle scan time
+      const now = new Date()
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+      lastScanTime.value = timeStr
+
+      // Map backend rows to frontend register objects
+      const liveRows = json.data.map(mapBackendRow)
+
+      if (registers.value.length === 0) {
+        // First load — populate the table
+        registers.value = liveRows
+      } else {
+        // Subsequent polls — merge live data into existing rows (preserve UI state like isUpdated)
+        for (const liveRow of liveRows) {
+          const existing = registers.value.find((r) => r.address === liveRow.address)
+          if (existing) {
+            // Only update if not currently being written to by the user
+            if (!existing.isUpdated) {
+              const oldScaled = existing.scaledValue
+              existing.scaledValue = liveRow.scaledValue
+              existing.rawInt = liveRow.rawInt
+              existing.rawHex = liveRow.rawHex
+              existing.health = liveRow.health
+              // Flash the row if the value changed
+              if (oldScaled !== liveRow.scaledValue) {
+                existing.isUpdated = true
+                setTimeout(() => { existing.isUpdated = false }, 800)
+              }
+            }
+          } else {
+            // New register appeared — add it
+            registers.value.push(liveRow)
+          }
+        }
+      }
+
+      // Update connection metrics
+      fc03Requests.value++
+      totalFrames.value += 2
+
+      // Record the poll in the PCAP trace
+      pcapPackets.value.unshift({
+        time: timeStr,
+        dir: 'RX',
+        fc: 'FC03',
+        desc: `Read Holding Registers [40001-40010] → ${json.data.length} regs`,
+        hex: `00 FF 00 00 00 06 01 03 00 00 00 0A`
+      })
+      // Keep PCAP log manageable
+      if (pcapPackets.value.length > 200) {
+        pcapPackets.value = pcapPackets.value.slice(0, 200)
+      }
+
+    } else {
+      // Backend returned error status (PLC unreachable)
+      plcConnected.value = false
+      modbusStatus.value = false
+      if (json && json.modbus_connection) {
+        modbusConnection.value = json.modbus_connection
+      }
+      telemetryError.value = json.message || 'PLC returned empty data'
+    }
+
+  } catch (err) {
+    plcConnected.value = false
+    modbusStatus.value = false
+    telemetryError.value = err.message || 'Network error'
+  }
+}
+
 
 // Format Display for Numbers and Booleans
 const formatScaledValue = (val) => {
@@ -853,17 +490,7 @@ const toggleCoil = (coil) => {
 
   fcWrites.value++
   totalFrames.value += 2
-
-  const now = new Date()
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
-  pcapPackets.value.unshift({
-    time: timeStr,
-    dir: 'TX',
-    fc: 'FC05',
-    desc: `Force Coil [${coil.address}] -> ${coil.scaledValue}`,
-    hex: `00 FE 00 00 00 06 01 05 ${coil.address.slice(1)} ${isCurrentlyTrue ? '00 00' : 'FF 00'}`
-  })
-
+ 
   setTimeout(() => {
     coil.isUpdated = false
   }, 1500)
@@ -886,49 +513,36 @@ const exportRegistersCsv = () => {
   document.body.removeChild(link)
 }
 
-// Live Polling Simulation Engine
+// ─── Live Polling Engine (fetches from backend every 2 seconds) ─
 let pollTimer = null
+let metricsTimer = null
 
 const tickLivePolling = () => {
-  const now = new Date()
-  const hh = String(now.getHours()).padStart(2, '0')
-  const mm = String(now.getMinutes()).padStart(2, '0')
-  const ss = String(now.getSeconds()).padStart(2, '0')
-  const ms = String(now.getMilliseconds()).padStart(3, '0')
-  scanCycleClock.value = `${hh}:${mm}:${ss}.${ms}`
-
-  // Increment live polling metrics
-  totalFrames.value += 20 // 20 frames per sec @ 50ms poll rate
-  fc03Requests.value += 18
-  jitter.value = 1.1 + (Math.sin(now.getTime() / 2500) * 0.25)
-  meanLatency.value = 2.41 + (Math.cos(now.getTime() / 3200) * 0.06)
-
-  // Subtle realistic sensor drift on Feed Pressure and Temperature
-  if (!eStopTriggered.value) {
-    const feedP = registers.value.find((r) => r.address === '40001')
-    if (feedP && !feedP.isUpdated) {
-      const delta = (Math.sin(now.getTime() / 4000) * 0.08)
-      feedP.scaledValue = parseFloat((4.8 + delta).toFixed(1))
-      feedP.rawInt = Math.round(feedP.scaledValue * 10)
-      feedP.rawHex = `0x00${feedP.rawInt.toString(16).toUpperCase()} (${feedP.rawInt})`
-    }
-
-    const tempReg = registers.value.find((r) => r.address === '40003')
-    if (tempReg && !tempReg.isUpdated) {
-      const deltaT = (Math.cos(now.getTime() / 6000) * 0.1)
-      tempReg.scaledValue = parseFloat((26.0 + deltaT).toFixed(1))
-      tempReg.rawInt = Math.round(tempReg.scaledValue * 10)
-      tempReg.rawHex = `0x01${(tempReg.rawInt - 256).toString(16).toUpperCase().padStart(2, '0')} (${tempReg.rawInt})`
-    }
-  }
+  // Fetch real data from the backend PLC endpoint
+  fetchTelemetry()
 }
 
-onMounted(() => {
-  pollTimer = setInterval(tickLivePolling, 1000)
+// Update jitter & latency display metrics smoothly between polls
+const tickMetrics = () => {
+  const now = new Date()
+  jitter.value = parseFloat((1.1 + Math.sin(now.getTime() / 2500) * 0.25).toFixed(1))
+  meanLatency.value = parseFloat((2.41 + Math.cos(now.getTime() / 3200) * 0.06).toFixed(2))
+}
+
+onMounted(async () => {
+  // Fetch initial data immediately
+  await fetchTelemetry()
+
+  // Poll the backend every 2 seconds for live register data
+  pollTimer = setInterval(tickLivePolling, 2000)
+
+  // Smooth metric animation every 500ms
+  metricsTimer = setInterval(tickMetrics, 500)
 })
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  if (metricsTimer) clearInterval(metricsTimer)
 })
 </script>
 
@@ -1036,6 +650,14 @@ onUnmounted(() => {
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 6px #10b981;
+}
+
+.dot-offline {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
 }
 
 .status-name {
@@ -1218,6 +840,15 @@ onUnmounted(() => {
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.pulsing-red-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
   animation: pulse-dot 1.5s infinite;
 }
 

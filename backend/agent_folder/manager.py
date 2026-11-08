@@ -1,12 +1,6 @@
 from inspect import trace
 from agent_folder.agent import run_agent
-from agent_folder.tools import MATH_TOOLS_SCHEMA, WEATHER_TOOLS_SCHEMA, TOOL_FUNCTION, DATABASE_TOOL_SCHEMA, EMAIL_TOOL_SCHEMA, RAG_TOOL_SCHEMA
-
-def math_agent(question, logger, approval_callback=None, task_emitter=None, session_id="default"):
-    """A sub-agent that only knows how to do math."""
-    logger("[Manager] Routing to Math Agent...")
-    answer, trace = run_agent(question, [], MATH_TOOLS_SCHEMA, TOOL_FUNCTION, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
-    return answer        
+from agent_folder.tools import WEATHER_TOOLS_SCHEMA, TOOL_FUNCTION, DATABASE_TOOL_SCHEMA, EMAIL_TOOL_SCHEMA, RAG_TOOL_SCHEMA, PREDICTION_TOOL_SCHEMA
 
 def weather_agent(question, logger, approval_callback=None, task_emitter=None, session_id="default"):
     """A sub-agent that only knows how to check the weather."""
@@ -26,6 +20,13 @@ def email_agent(question, logger, approval_callback=None, task_emitter=None, ses
     answer, trace = run_agent(question, [], EMAIL_TOOL_SCHEMA, TOOL_FUNCTION, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
     return answer
 
+def prediction_agent(question, logger, approval_callback=None, task_emitter=None, session_id="default"):
+    logger("[Manager] Routing to Prediction Agent...")
+    answer, trace = run_agent(question, [], PREDICTION_TOOL_SCHEMA, TOOL_FUNCTION, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
+    return answer
+
+
+
 RAG_SYSTEM_INPUT = """
 You are a Knowledge Base and Document Retrieval Agent.
 You MUST ALWAYS use search_company_docs to look up company documents, policies, guides, and specifications before answering.
@@ -39,22 +40,18 @@ def rag_agent(question, logger, approval_callback=None, task_emitter=None, sessi
     answer, trace = run_agent(question, [], RAG_TOOL_SCHEMA, TOOL_FUNCTION, system_input=RAG_SYSTEM_INPUT, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
     return answer
 
+
+# 3. Define the Functions that the Manager actually executes
+def ask_weather_agent(city):
+    return weather_agent(f"What is the weather in {city}?")
+
+def ask_database_agent(question, logger=print):
+    return database_query_agent(question, logger=print)
+
+
+
 # 2. Define the Manager's Tools (What the Manager is allowed to call)
 MANAGER_TOOLS_SCHEMA = [
-    {
-        "type": "function",
-        "function": {
-            "name": "ask_math_agent",
-            "description": "Ask the math agent to solve any arithmetic, math, or calculation problem.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "question": {"type": "string", "description": "The math question to ask"}
-                },
-                "required": ["question"]
-            }
-        }
-    },
     {
         "type": "function",
         "function": {
@@ -110,18 +107,22 @@ MANAGER_TOOLS_SCHEMA = [
                 "required": ["question"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ask_prediction_agent",
+            "description": "Ask the prediction agent for the current live predicted permeate flow and TDS of the plant.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string", "description": "The question about plant predictions"}
+                },
+                "required": ["question"]
+            }
+        }
     }
 ]
-
-# 3. Define the Functions that the Manager actually executes
-def ask_math_agent(question, logger=print):
-    return math_agent(question, logger=print)
-
-def ask_weather_agent(city):
-    return weather_agent(f"What is the weather in {city}?")
-
-def ask_database_agent(question, logger=print):
-    return database_query_agent(question, logger=print)
 
 
 
@@ -131,9 +132,6 @@ def ask_database_agent(question, logger=print):
 #####################################################################
 """
 def get_manager_tools(logger, approval_callback=None, task_emitter=None, session_id="default"):
-    def ask_math_agent(question):
-        return math_agent(question, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
-
     def ask_weather_agent(city):
         return weather_agent(f"What is the weather in {city}?", logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
 
@@ -146,10 +144,14 @@ def get_manager_tools(logger, approval_callback=None, task_emitter=None, session
     def ask_rag_agent(question): 
         return rag_agent(question, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
 
+    
+    def ask_prediction_agent(question):
+        return prediction_agent(question, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
+
     return {
-        "ask_math_agent": ask_math_agent,
         "ask_weather_agent": ask_weather_agent,
         "ask_database_agent": ask_database_agent,
         "ask_email_agent": ask_email_agent,
-        "ask_rag_agent": ask_rag_agent
+        "ask_rag_agent": ask_rag_agent,
+        "ask_prediction_agent": ask_prediction_agent
     }
