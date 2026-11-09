@@ -377,10 +377,31 @@
           </div>
 
           <div class="schedule-right">
-            <span class="badge-countdown font-mono" :class="{ 'paused-running': isAgentRunning, 'halted-stopped': eStopActive }">
+            <!-- Autonomous Agent Enable / Disable Toggle -->
+            <button
+              type="button"
+              class="btn-auto-toggle font-mono"
+              :class="{ 'is-enabled': isAutonomousAgentEnabled, 'is-disabled': !isAutonomousAgentEnabled }"
+              @click="toggleAutonomousAgent"
+              :title="isAutonomousAgentEnabled ? 'Click to Disable Autonomous Agent Schedule' : 'Click to Enable Autonomous Agent Schedule'"
+            >
+              <span class="auto-toggle-track">
+                <span class="auto-toggle-dot" :class="isAutonomousAgentEnabled ? 'dot-active' : 'dot-inactive'"></span>
+              </span>
+              <span class="auto-toggle-label">
+                AUTONOMOUS: <strong>{{ isAutonomousAgentEnabled ? 'ENABLED' : 'DISABLED' }}</strong>
+              </span>
+            </button>
+
+            <!-- Countdown Timer Badge -->
+            <span class="badge-countdown font-mono" :class="{ 'paused-running': isAgentRunning, 'halted-stopped': eStopActive, 'disabled-auto': !isAutonomousAgentEnabled }">
               <span v-if="eStopActive" class="running-indicator">
                 <span class="pulsing-red-dot"></span>
                 PLANT HALTED (TIMER RESET)
+              </span>
+              <span v-else-if="!isAutonomousAgentEnabled" class="running-indicator">
+                <span class="paused-dot"></span>
+                AGENT DISABLED (TIMER PAUSED)
               </span>
               <span v-else-if="isAgentRunning" class="running-indicator">
                 <span class="pulse-agent-dot"></span>
@@ -510,7 +531,7 @@
           </div>
 
           <div class="report-actions">
-            <button type="button" class="btn-action-audit" @click="triggerAutoRun" :disabled="isAgentRunning" title="Run autonomous supervisor immediately">
+            <button type="button" class="btn-action-audit" @click="triggerAutoRun(true)" :disabled="isAgentRunning" title="Run autonomous supervisor immediately">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': isAgentRunning }">
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
@@ -616,6 +637,19 @@ let clockTimer = null
 // Persistence Keys
 const INTERVAL_STORAGE_KEY = 'scada_execution_interval'
 const TARGET_TIMESTAMP_KEY = 'scada_next_run_target'
+const AUTO_AGENT_STORAGE_KEY = 'scada_autonomous_agent_enabled'
+
+// Load persisted autonomous agent state from localStorage (default: true)
+const getInitialAutoAgentEnabled = () => {
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem(AUTO_AGENT_STORAGE_KEY)
+    if (saved !== null) {
+      return saved === 'true'
+    }
+  }
+  return true
+}
+const isAutonomousAgentEnabled = ref(getInitialAutoAgentEnabled())
 
 // Load persisted interval from localStorage (default: '60')
 const savedInterval = (typeof localStorage !== 'undefined' && localStorage.getItem(INTERVAL_STORAGE_KEY)) || '60'
@@ -633,8 +667,10 @@ const getInitialCountdownSeconds = () => {
         return remaining
       }
     }
-    // Initialize target timestamp
-    localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
+    // Initialize target timestamp if enabled
+    if (isAutonomousAgentEnabled.value) {
+      localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
+    }
   }
   return intervalSecs
 }
@@ -813,8 +849,9 @@ const cycleStatText = computed(() => {
 })
 
 // Trigger Auto-Run from backend
-const triggerAutoRun = async () => {
+const triggerAutoRun = async (isManual = false) => {
   if (isAgentRunning.value || eStopActive.value) return
+  if (!isManual && !isAutonomousAgentEnabled.value) return
   isAgentRunning.value = true
 
   try {
@@ -906,12 +943,34 @@ const triggerAutoRun = async () => {
     }
 
     // Synchronize localStorage target timestamp to resume countdown from current seconds
-    if (typeof localStorage !== 'undefined') {
+    if (isAutonomousAgentEnabled.value && !eStopActive.value && typeof localStorage !== 'undefined') {
       localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + countdownSeconds.value * 1000))
     }
 
     const mins = Math.floor(countdownSeconds.value / 60)
     const secs = countdownSeconds.value % 60
+    countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
+  }
+}
+
+const toggleAutonomousAgent = () => {
+  isAutonomousAgentEnabled.value = !isAutonomousAgentEnabled.value
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(AUTO_AGENT_STORAGE_KEY, String(isAutonomousAgentEnabled.value))
+  }
+
+  if (!isAutonomousAgentEnabled.value) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(TARGET_TIMESTAMP_KEY)
+    }
+  } else {
+    const remaining = countdownSeconds.value > 0 ? countdownSeconds.value : ((parseInt(selectedInterval.value) || 60) * 60)
+    countdownSeconds.value = remaining
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + remaining * 1000))
+    }
+    const mins = Math.floor(remaining / 60)
+    const secs = remaining % 60
     countdownText.value = `${mins}m ${String(secs).padStart(2, '0')}s`
   }
 }
@@ -923,7 +982,7 @@ watch(selectedInterval, (newVal) => {
   }
   const intervalSecs = (parseInt(newVal) || 60) * 60
   countdownSeconds.value = intervalSecs
-  if (!eStopActive.value && typeof localStorage !== 'undefined') {
+  if (isAutonomousAgentEnabled.value && !eStopActive.value && typeof localStorage !== 'undefined') {
     localStorage.setItem(TARGET_TIMESTAMP_KEY, String(Date.now() + intervalSecs * 1000))
   }
   const mins = Math.floor(intervalSecs / 60)
@@ -993,8 +1052,8 @@ const updateClock = () => {
 }
 
 const updateCountdown = async () => {
-  // If plant is stopped (e-stop active) or agent is actively running, stop/freeze the timer
-  if (eStopActive.value || isAgentRunning.value) {
+  // If plant is stopped (e-stop active), agent is actively running, or autonomous agent is disabled, stop/freeze the timer
+  if (eStopActive.value || isAgentRunning.value || !isAutonomousAgentEnabled.value) {
     return
   }
 
@@ -1553,6 +1612,91 @@ onUnmounted(() => {
 .select-inline option:checked {
   background-color: #0284c7 !important;
   color: #ffffff !important;
+}
+
+.schedule-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-auto-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: transparent;
+  outline: none;
+}
+
+.btn-auto-toggle.is-enabled {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #10b981;
+}
+
+.btn-auto-toggle.is-enabled:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-auto-toggle.is-disabled {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+.btn-auto-toggle.is-disabled:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.auto-toggle-track {
+  width: 24px;
+  height: 13px;
+  border-radius: 10px;
+  background: #0a1324;
+  border: 1px solid #1e293b;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  transition: all 0.2s ease;
+}
+
+.btn-auto-toggle.is-enabled .auto-toggle-track {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+}
+
+.auto-toggle-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  transform: translateX(0);
+}
+
+.auto-toggle-dot.dot-active {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  transform: translateX(11px);
+}
+
+.paused-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
 }
 
 .badge-countdown {
@@ -2659,6 +2803,34 @@ onUnmounted(() => {
   font-weight: 600 !important;
 }
 
+[data-theme="light"] .btn-auto-toggle.is-enabled {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .btn-auto-toggle.is-disabled {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-auto-toggle .auto-toggle-track {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .btn-auto-toggle.is-enabled .auto-toggle-track {
+  background: #a7f3d0 !important;
+  border-color: #059669 !important;
+}
+
+[data-theme="light"] .badge-countdown.disabled-auto {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
 [data-theme="light"] .badge-countdown {
   background: #f0f9ff !important;
   border-color: #bae6fd !important;
@@ -3220,6 +3392,34 @@ onUnmounted(() => {
   background-color: #ffffff !important;
   color: #0f172a !important;
   font-weight: 600 !important;
+}
+
+[data-theme="light"] .btn-auto-toggle.is-enabled {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+[data-theme="light"] .btn-auto-toggle.is-disabled {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-auto-toggle .auto-toggle-track {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .btn-auto-toggle.is-enabled .auto-toggle-track {
+  background: #a7f3d0 !important;
+  border-color: #059669 !important;
+}
+
+[data-theme="light"] .badge-countdown.disabled-auto {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
 }
 
 [data-theme="light"] .badge-countdown {
