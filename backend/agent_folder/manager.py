@@ -14,10 +14,17 @@ def database_query_agent(question, logger, approval_callback=None, task_emitter=
     answer, trace = run_agent(question, [], DATABASE_TOOL_SCHEMA, TOOL_FUNCTION, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
     return answer
 
+EMAIL_SYSTEM_INPUT = """
+You are an Email Notification Agent.
+You MUST ALWAYS use the send_email tool to send the email with the given recipient, subject, and body.
+If plant telemetry (flow, tds, quality) is mentioned, make sure to pass flow, tds, and quality to send_email.
+After calling send_email, return the confirmation result.
+"""
+
 # 2. Add the email_agent function right below database_query_agent
 def email_agent(question, logger, approval_callback=None, task_emitter=None, session_id="default"):
     logger("[Manager] Routing to Email Agent...")
-    answer, trace = run_agent(question, [], EMAIL_TOOL_SCHEMA, TOOL_FUNCTION, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
+    answer, trace = run_agent(question, [], EMAIL_TOOL_SCHEMA, TOOL_FUNCTION, system_input=EMAIL_SYSTEM_INPUT, logger=logger, approval_callback=approval_callback, task_emitter=task_emitter, session_id=session_id)
     return answer
 
 def prediction_agent(question, logger, approval_callback=None, task_emitter=None, session_id="default"):

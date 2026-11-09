@@ -1,11 +1,28 @@
 import requests
 import os
+import sys
 import datetime
+
+# Ensure backend directory is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 from database.database import get_all_users, delete_user, keyword_search_chunks
 import chromadb
 from sentence_transformers import SentenceTransformer
 from inject_rag.ingest_rag_service import get_embedding_model
 from ml_service import predict_live_status
+import resend
+from email_templates.email_template import generate_email_body
+from dotenv import load_dotenv
+
+# Ensure .env is loaded from backend directory even if started from another working directory
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+load_dotenv()
+
+resend_api_key = os.getenv("resend_key") or os.getenv("RESEND_API_KEY")
+resend.api_key = resend_api_key
 
 #connect to chroma database using client
 chroma_client = chromadb.HttpClient(host='localhost', port=8001)
@@ -67,13 +84,16 @@ EMAIL_TOOL_SCHEMA = [
         "type": "function",
         "function": {
             "name": "send_email",
-            "description": "Sends an email to a specific address. Use this when the user asks to send an email.",
+            "description": "Sends an email. If sending a plant diagnostic report, you MUST include flow, tds, and quality.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "to_address": {"type": "string", "description": "The email address to send to"},
                     "subject": {"type": "string", "description": "The subject of the email"},
-                    "body": {"type": "string", "description": "The content of the email"}
+                    "body": {"type": "string", "description": "The text content of the email"},
+                    "flow": {"type": "number", "description": "The predicted permeate flow (optional, for reports)"},
+                    "tds": {"type": "number", "description": "The predicted permeate TDS (optional, for reports)"},
+                    "quality": {"type": "string", "description": "The water quality status (e.g., Good, Warning, Poor)"}
                 },
                 "required": ["to_address", "subject", "body"]
             }
@@ -117,16 +137,29 @@ PREDICTION_TOOL_SCHEMA = [
 
 
 
-def send_email(to_address: str, subject: str, body: str):
-    """A mock function to send an email and write it to a log file."""
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = f"[{timestamp}] To: {to_address} | Subject: {subject} | Body: {body}\n"
-    
-    # Write to a file in the backend folder
-    with open("sent_emails.log", "a", encoding="utf-8") as f:
-        f.write(log_entry)
-        
-    return f"Email successfully sent to {to_address}."
+def send_email(to_address: str, subject: str, body: str, flow: float = None, tds: float = None, quality: str = None):
+    """Sends a styled HTML email using Resend."""
+    try:
+        if not resend.api_key:
+            resend.api_key = os.getenv("resend_key") or os.getenv("RESEND_API_KEY")
+        # If plant data is provided, use the beautiful HTML template
+        if flow is not None and tds is not None and quality is not None:
+            html_content = generate_email_body(flow, tds, quality, body)
+        else:
+            # Fallback to plain text for normal emails
+            html_content = f"<p>{body}</p>"
+
+        params = {
+            "from": "SwarmFlow Alerts <onboarding@resend.dev>",
+            "to": [to_address],
+            "subject": subject,
+            "html": html_content,
+        }
+
+        email = resend.Emails.send(params)
+        return f"Email successfully sent via Resend. ID: {email['id']}"
+    except Exception as e:
+        return f"Failed to send email: {str(e)}"
 
 
 

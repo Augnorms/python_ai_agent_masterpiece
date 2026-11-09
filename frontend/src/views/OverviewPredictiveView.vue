@@ -233,43 +233,6 @@
           </div>
         </div>
 
-        <!-- Schedule / Interval Controller Row -->
-        <div class="engine-schedule-bar">
-          <div class="schedule-left">
-            <span class="schedule-label">INTERVAL:</span>
-            <div class="select-inline-wrapper">
-              <svg class="schedule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span class="schedule-prefix font-mono">EXECUTION SCHEDULE / RUN INTERVAL:</span>
-              <select v-model="selectedInterval" class="select-inline font-mono">
-                <option value="60">Every 60 mins (Hourly)</option>
-                <option value="30">Every 30 mins</option>
-                <option value="15">Every 15 mins</option>
-                <option value="5">Continuous (5 mins)</option>
-                <option value="1">Fast Test (1 min)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="schedule-right">
-            <span class="badge-countdown font-mono" :class="{ 'paused-running': isAgentRunning, 'halted-stopped': eStopActive }">
-              <span v-if="eStopActive" class="running-indicator">
-                <span class="pulsing-red-dot"></span>
-                PLANT HALTED (TIMER RESET)
-              </span>
-              <span v-else-if="isAgentRunning" class="running-indicator">
-                <span class="pulse-agent-dot"></span>
-                AGENT RUNNING (TIMER PAUSED)
-              </span>
-              <span v-else>
-                NEXT RUN: {{ countdownText }}
-              </span>
-            </span>
-          </div>
-        </div>
-
         <div class="engine-info-note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
@@ -392,6 +355,43 @@
             </p>
           </div>
         </section> -->
+
+                <!-- Schedule / Interval Controller Row -->
+        <div class="engine-schedule-bar">
+          <div class="schedule-left">
+            <span class="schedule-label">INTERVAL:</span>
+            <div class="select-inline-wrapper">
+              <svg class="schedule-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span class="schedule-prefix font-mono">EXECUTION SCHEDULE / RUN INTERVAL:</span>
+              <select v-model="selectedInterval" class="select-inline font-mono">
+                <option value="60">Every 60 mins (Hourly)</option>
+                <option value="30">Every 30 mins</option>
+                <option value="15">Every 15 mins</option>
+                <option value="5">Continuous (5 mins)</option>
+                <option value="1">Fast Test (1 min)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="schedule-right">
+            <span class="badge-countdown font-mono" :class="{ 'paused-running': isAgentRunning, 'halted-stopped': eStopActive }">
+              <span v-if="eStopActive" class="running-indicator">
+                <span class="pulsing-red-dot"></span>
+                PLANT HALTED (TIMER RESET)
+              </span>
+              <span v-else-if="isAgentRunning" class="running-indicator">
+                <span class="pulse-agent-dot"></span>
+                AGENT RUNNING (TIMER PAUSED)
+              </span>
+              <span v-else>
+                NEXT RUN: {{ countdownText }}
+              </span>
+            </span>
+          </div>
+        </div>
 
         <!-- Right: Agent Anomalies & Reasoning -->
         <section class="scada-panel half-panel">

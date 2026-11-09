@@ -1,13 +1,17 @@
-import sqlite3
+# import sqlite3
 
-conn = sqlite3.connect("agent_memory.db")
-cursor = conn.cursor()
-cursor.execute("SELECT session_id, messages FROM chat_sessions")
-rows = cursor.fetchall()
+# conn = sqlite3.connect("agent_memory.db")
+# cursor = conn.cursor()
+# cursor.execute("SELECT session_id, messages FROM chat_sessions")
+# rows = cursor.fetchall()
 
-for row in rows:
-    print(f"Session ID: {row[0]}")
-    print(f"History: {row[1]}")
-    print("-" * 50)
+# for row in rows:
+#     print(f"Session ID: {row[0]}")
+#     print(f"History: {row[1]}")
+#     print("-" * 50)
 
-conn.close()
+# conn.close()
+
+import requests
+
+requests.post("http://127.0.0.1:8080/api/stop-plc")

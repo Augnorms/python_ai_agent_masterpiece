@@ -18,7 +18,7 @@ Final Answer: [Your answer]
 """
 
 
-DANGEROUS_TOOLS = ["delete_user", "send_email"]
+DANGEROUS_TOOLS = ["delete_user"]
 
 def run_agent(
      user_input,
