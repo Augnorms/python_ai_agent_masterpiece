@@ -1050,9 +1050,6 @@ onMounted(() => {
 
   fetchLivePredictions()
   predictTimer = setInterval(fetchLivePredictions, 2000)
-
-  // Run autonomous agent cycle on initial load
-  triggerAutoRun()
 })
 
 onUnmounted(() => {
