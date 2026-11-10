@@ -293,13 +293,35 @@ const userInput = ref('')
 const messages = ref([])
 const isLoading = ref(false)
 const isClearingMemory = ref(false)
-const sessionId = ref(crypto.randomUUID())
+const sessionId = ref('default')
 const pendingApproval = ref(null)
 const chatBoxRef = ref(null)
 const taskLifecycle = ref([])
 const latency = ref(0)
 const successRate = ref(0)
 const taskDurations = ref([])
+
+const getUserSessionId = () => {
+  const token = localStorage.getItem('scada_access_token')
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload && payload.id) {
+        return String(payload.id)
+      }
+    } catch (e) {
+      console.warn('Could not decode token payload', e)
+    }
+  }
+  const userStr = localStorage.getItem('scada_user')
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr)
+      if (u && (u.id || u.user_id)) return String(u.id || u.user_id)
+    } catch (e) {}
+  }
+  return localStorage.getItem('agent_session_id') || 'default'
+}
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -309,15 +331,12 @@ const scrollToBottom = async () => {
 }
 
 onMounted(async () => {
-  let savedSessionId = localStorage.getItem('agent_session_id')
-  if (!savedSessionId) {
-    savedSessionId = crypto.randomUUID()
-    localStorage.setItem('agent_session_id', savedSessionId)
-  }
-  sessionId.value = savedSessionId
+  const currentSid = getUserSessionId()
+  sessionId.value = currentSid
+  localStorage.setItem('agent_session_id', currentSid)
 
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/history?session_id=${savedSessionId}`)
+    const res = await fetch(`http://127.0.0.1:8000/api/history?session_id=${encodeURIComponent(currentSid)}`)
     if (res.ok) {
       const data = await res.json()
       if (data.messages && data.messages.length > 0) {
@@ -368,9 +387,13 @@ const clearMemory = async () => {
   isClearingMemory.value = true
 
   const prevSessionId = sessionId.value
+  const token = localStorage.getItem('scada_access_token')
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/memory/${prevSessionId}`, {
-      method: 'DELETE'
+    const res = await fetch(`http://127.0.0.1:8000/api/memory/${encodeURIComponent(prevSessionId)}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     })
     if (!res.ok) {
       console.warn(`Memory clear returned status ${res.status}`)
@@ -378,9 +401,6 @@ const clearMemory = async () => {
   } catch (err) {
     console.error('Failed to clear memory on backend:', err)
   } finally {
-    const newId = crypto.randomUUID()
-    localStorage.setItem('agent_session_id', newId)
-    sessionId.value = newId
     messages.value = []
     taskLifecycle.value = []
     taskDurations.value = []
@@ -389,10 +409,14 @@ const clearMemory = async () => {
 }
 
 const handleApproval = async (isApproved) => {
+  const token = localStorage.getItem('scada_access_token')
   try {
     await fetch('http://127.0.0.1:8000/api/approve', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({
         session_id: sessionId.value,
         approved: isApproved
@@ -463,8 +487,30 @@ const sendMessage = async () => {
   const agentMsgIndex = messages.value.push({ role: 'agent', text: '', time: now }) - 1
   scrollToBottom()
 
+  const token = localStorage.getItem('scada_access_token')
+  if (!token) {
+    messages.value[agentMsgIndex].text = '[Authentication Error] SCADA Session Token missing. Please sign in via the SCADA gateway.'
+    isLoading.value = false
+    return
+  }
+
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/chat?prompt=${encodeURIComponent(prompt)}&session_id=${sessionId.value}`)
+    const response = await fetch(`http://127.0.0.1:8000/api/chat?prompt=${encodeURIComponent(prompt)}&session_id=${encodeURIComponent(sessionId.value)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (response.status === 401) {
+      messages.value[agentMsgIndex].text = '[Authentication Error] Session expired or invalid credentials (401 Unauthorized). Please sign in again.'
+      isLoading.value = false
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status} ${response.statusText}`)
+    }
+
     if (!response.body) throw new Error('ReadableStream not supported')
 
     const reader = response.body.getReader()

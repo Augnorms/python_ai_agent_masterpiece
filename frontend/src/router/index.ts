@@ -4,11 +4,18 @@ import KnowledgeRagView from '../views/KnowledgeRagView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import OverviewPredictiveView from '../views/OverviewPredictiveView.vue'
 import ModbusTelemetryView from '../views/ModbusTelemetryView.vue'
+import LoginView from '../views/LoginView.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/overview'
+    redirect: '/login'
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView,
+    meta: { title: 'SCADA Operator Gateway Login' }
   },
   {
     path: '/overview',
@@ -45,6 +52,22 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('scada_access_token')
+  if (to.path === '/login') {
+    if (token) {
+      return next('/overview')
+    }
+    return next()
+  }
+
+  if (!token) {
+    return next('/login')
+  }
+
+  next()
 })
 
 export default router

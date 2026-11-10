@@ -55,7 +55,9 @@ def run_agent(
     # Check Swarm active state
     if not settings.get("is_swarm_active", True):
         logger("[swarm] Swarm is set to STANDBY mode.")
-        return "The autonomous multi-agent swarm is currently in STANDBY mode. Please enable it in System Settings to resume task orchestration.", messages
+        standby_msg = "The autonomous multi-agent swarm is currently in STANDBY mode. Please enable it in System Settings to resume task orchestration."
+        messages.append({"role": "assistant", "content": standby_msg})
+        return standby_msg, messages
 
     logger(f"[Orchestrator Config] Model: {active_model} | Temp: {active_temperature} | MaxSteps: {effective_maxstep}")
 
@@ -74,13 +76,20 @@ def run_agent(
             )
         except Exception as e:
             logger(f"[API Error] {e}")
-            return f"API Error occurred: {e}", messages
+            err_msg = f"API Error occurred: {e}"
+            messages.append({"role": "assistant", "content": err_msg})
+            return err_msg, messages
 
         assistant_message = response.choices[0].message
         tool_calls = assistant_message.tool_calls
         
-        #print(tool_calls)
-        messages.append(assistant_message)
+        # Ensure messages are stored as dicts for serialization and dict-method compatibility
+        if hasattr(assistant_message, "model_dump"):
+            messages.append(assistant_message.model_dump(exclude_none=True))
+        elif isinstance(assistant_message, dict):
+            messages.append(assistant_message)
+        else:
+            messages.append({"role": "assistant", "content": getattr(assistant_message, "content", "") or ""})
 
         #this is the final answer
         #if tool_call is empty then call the content
@@ -155,7 +164,9 @@ def run_agent(
                 "content":str(result)
             })
 
-    return "Hit max steps without a final answer.", messages
+    max_steps_msg = "Hit max steps without a final answer."
+    messages.append({"role": "assistant", "content": max_steps_msg})
+    return max_steps_msg, messages
 
 
 

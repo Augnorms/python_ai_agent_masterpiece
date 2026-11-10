@@ -31,12 +31,13 @@ def init_db():
         )
     """)
     
-    # Create users table (for our database agent)
+    # 1. Create users table for Authentication
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS auth_users (
             id SERIAL PRIMARY KEY,
-            name VARCHAR(255),
-            email VARCHAR(255)
+            username VARCHAR(255) UNIQUE NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            hashed_password VARCHAR(255) NOT NULL
         )
     """)
 
@@ -99,6 +100,59 @@ def init_db():
 
 """
 
+def create_auth_user(username: str, email: str, hashed_password: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO auth_users (username, email, hashed_password) VALUES (%s, %s, %s) RETURNING id",
+            (username, email, hashed_password)
+        )
+        user_id = cursor.fetchone()[0]
+        conn.commit()
+        return user_id
+    except psycopg2.IntegrityError:
+        conn.rollback()
+        return None # Username or email already exists
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_auth_user_by_username(username: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, email, hashed_password FROM auth_users WHERE username = %s", (username,))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if user:
+        return {"id": user[0], "username": user[1], "email": user[2], "hashed_password": user[3]}
+    return None
+
+def get_all_users():
+    """Retrieves all users from the auth_users table."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, email FROM auth_users")
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [{"id": u[0], "username": u[1], "email": u[2]} for u in users]
+
+def delete_user(user_id: int):
+    """Deletes a user from the auth_users table by user_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM auth_users WHERE id = %s", (user_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    cursor.close()
+    conn.close()
+    if deleted:
+        return f"User with ID {user_id} successfully deleted."
+    return f"User with ID {user_id} not found."
+
 
 def save_history(session_id: str, messages: list):
     conn = get_db_connection()
@@ -133,6 +187,7 @@ def save_history(session_id: str, messages: list):
     cursor.close()
     conn.close()
 
+
 def load_history(session_id: str) -> list:
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -145,6 +200,7 @@ def load_history(session_id: str) -> list:
         return json.loads(row[0])
     return []
 
+
 def delete_session(session_id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -152,40 +208,6 @@ def delete_session(session_id: str):
     conn.commit()
     cursor.close()
     conn.close()
-
-
-def get_all_users():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if users exist, if not, seed them
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com'), ('Bob', 'bob@example.com')")
-        conn.commit()
-        
-    cursor.execute("SELECT id, name, email FROM users")
-    users = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    if not users:
-        return "No users found in the database."
-        
-    result = "Users in database:\n"
-    for u in users:
-        result += f"- ID: {u[0]}, Name: {u[1]}, Email: {u[2]}\n"
-    return result
-
-
-def delete_user(user_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return f"User with ID {user_id} was successfully deleted."
 
 
 def save_document_chunks(filename: str, chunks: list):

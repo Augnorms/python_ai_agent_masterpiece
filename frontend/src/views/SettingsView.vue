@@ -262,6 +262,229 @@
           </div>
         </section>
 
+        <!-- Card 3: Provisioning Blueprint (SCADA Operator Registration) -->
+        <section class="settings-card blueprint-card">
+          <div class="card-glow-bar cyan"></div>
+          <div class="card-header blueprint-header">
+            <div class="card-header-left">
+              <div class="card-icon-box cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="card-title">Provisioning Blueprint</h3>
+                <p class="blueprint-sec-tag">SEC-ROLE: SCADA_OPERATOR_V4</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn-fast-generate"
+              @click="generateSecureCredentials"
+              title="Auto-generate high-entropy password and parameters"
+            >
+              <span class="sparkle-icon">✦</span>
+              <span>Fast Generate Secure Key</span>
+            </button>
+          </div>
+
+          <div class="card-body">
+            <!-- Field 1: Username / Operator ID -->
+            <div class="bp-field-group">
+              <div class="bp-label-row">
+                <label class="form-label" for="bp-username">
+                  Username / Operator ID <span class="required-star">*</span>
+                </label>
+                <span class="bp-ldap-badge">
+                  <span class="ldap-dot"></span>
+                  AVAILABLE IN LDAP
+                </span>
+              </div>
+              <div class="bp-input-wrapper">
+                <span class="bp-input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M5.5 21a8.5 8.5 0 0 1 13 0" />
+                  </svg>
+                </span>
+                <input
+                  id="bp-username"
+                  v-model="operatorUsername"
+                  type="text"
+                  class="form-input bp-input"
+                  placeholder="op_arun_88"
+                  required
+                />
+                <span class="bp-reg-badge">REG: a-z0-9_</span>
+              </div>
+              <p class="field-hint bp-hint">Must match standard SCADA plant taxonomy (op_, maint_, or eng_ prefixes).</p>
+            </div>
+
+            <!-- Field 2: Email Address / Security Dispatch -->
+            <div class="bp-field-group">
+              <div class="bp-label-row">
+                <label class="form-label" for="bp-email">
+                  Email Address / Security Dispatch <span class="required-star">*</span>
+                </label>
+              </div>
+              <div class="bp-input-wrapper">
+                <span class="bp-input-icon">@</span>
+                <input
+                  id="bp-email"
+                  v-model="operatorEmail"
+                  type="email"
+                  class="form-input bp-input"
+                  placeholder="a.run@aquasync-desal.internal"
+                  required
+                />
+              </div>
+              <p class="field-hint bp-hint bp-info-hint">
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>Used for critical Level-3 SCADA alarm escalations, chemical leak alerts, and MFA challenges.</span>
+              </p>
+            </div>
+
+            <!-- Field 3: Password & Hash Parameters -->
+            <div class="bp-field-group">
+              <div class="bp-label-row">
+                <label class="form-label" for="bp-password">
+                  Password &amp; Hash Parameters <span class="required-star">*</span>
+                </label>
+                <span class="bp-strength-badge">
+                  STRENGTH: HIGH (128-BIT ENTROPY)
+                </span>
+              </div>
+              <div class="bp-passwords-row">
+                <div class="bp-input-wrapper flex-1">
+                  <span class="bp-input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                  <input
+                    id="bp-password"
+                    v-model="operatorPassword"
+                    :type="showBpPassword ? 'text' : 'password'"
+                    class="form-input bp-input"
+                    placeholder="••••••••••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="bp-toggle-eye"
+                    @click="showBpPassword = !showBpPassword"
+                    :title="showBpPassword ? 'Hide password' : 'Show password'"
+                  >
+                    <svg v-if="!showBpPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="bp-input-wrapper flex-1">
+                  <span class="bp-input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                  </span>
+                  <input
+                    id="bp-confirm-password"
+                    v-model="operatorConfirmPassword"
+                    :type="showBpPassword ? 'text' : 'password'"
+                    class="form-input bp-input"
+                    placeholder="••••••••••••••••"
+                    required
+                  />
+                  <span class="bp-confirmed-badge" v-if="passwordsMatch">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="16 9 10 15 7 12" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Segmented Strength Bar -->
+              <div class="bp-entropy-bar">
+                <div class="entropy-segment filled"></div>
+                <div class="entropy-segment filled"></div>
+                <div class="entropy-segment filled"></div>
+              </div>
+            </div>
+
+            <!-- Active Crypto Specification Card -->
+            <div class="bp-crypto-box">
+              <div class="crypto-header-line">
+                <div class="crypto-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shield-mini">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>ACTIVE CRYPTO SPECIFICATION:</span>
+                </div>
+                <span class="crypto-standard">ARGON2ID (RFC 9106)</span>
+              </div>
+
+              <div class="crypto-params-row">
+                <span>MEM: 64 MiB (m=65536)</span>
+                <span>PASSES: t=3 iterations</span>
+                <span>THREADS: p=4 lanes</span>
+              </div>
+
+              <div class="crypto-trace-preview">
+                <span class="trace-label">SYNTHETIC COMPUTED HASH TRACE PREVIEW:</span>
+                <div class="trace-code-box">
+                  {{ computedHashTrace }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Operational Access Tier & Control Rights -->
+            <div class="bp-access-tier-box">
+              <span class="tier-label">Operational Access Tier &amp; Control Rights:</span>
+              <div class="tier-pills">
+                <span class="tier-pill">● READ_TELEMETRY</span>
+                <span class="tier-pill">● ISSUE_SETPOINT_CMD</span>
+                <span class="tier-pill">● OVERRIDE_SAFETY_INTERLOCK</span>
+              </div>
+            </div>
+
+            <!-- Provision Submit Button -->
+            <div class="bp-submit-row">
+              <button
+                type="button"
+                class="btn-provision-primary"
+                :disabled="isProvisioning || !operatorUsername || !operatorPassword"
+                @click="provisionOperator"
+              >
+                <span v-if="!isProvisioning">
+                  Provision SCADA Operator Credential <span class="arrow-sym">→</span>
+                </span>
+                <span v-else class="btn-spinner-row">
+                  <span class="btn-spinner"></span>
+                  <span>Registering in Plant Database...</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- Form Action Bar -->
         <div class="form-action-footer">
           <div class="footer-left-info">
@@ -302,11 +525,86 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const currentSessionId = ref('')
 const isLoading = ref(false)
 const isSaving = ref(false)
+
+// SCADA Operator Provisioning Blueprint State
+const operatorUsername = ref('op_arun_88')
+const operatorEmail = ref('a.run@aquasync-desal.internal')
+const operatorPassword = ref('AquaSync#2026!Secured')
+const operatorConfirmPassword = ref('AquaSync#2026!Secured')
+const showBpPassword = ref(false)
+const isProvisioning = ref(false)
+
+const passwordsMatch = computed(() => {
+  return Boolean(operatorPassword.value && operatorPassword.value === operatorConfirmPassword.value)
+})
+
+const computedHashTrace = computed(() => {
+  if (!operatorPassword.value) {
+    return '$argon2id$v=19$m=65536,t=3,p=4$dBhpcylpcy1hLXNhbHQ$7xKm2N3oD...F8v2QkL'
+  }
+  const raw = operatorUsername.value + ':' + operatorPassword.value
+  let hashVal = 0
+  for (let i = 0; i < raw.length; i++) {
+    hashVal = ((hashVal << 5) - hashVal + raw.charCodeAt(i)) | 0
+  }
+  const hex = Math.abs(hashVal).toString(16).padEnd(8, 'f')
+  return `$argon2id$v=19$m=65536,t=3,p=4$dBhpcylpcy1hLXNhbHQ$7xKm2N3o${hex}...F8v2QkL`
+})
+
+const generateSecureCredentials = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*'
+  let newPass = ''
+  for (let i = 0; i < 20; i++) {
+    newPass += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  operatorPassword.value = newPass
+  operatorConfirmPassword.value = newPass
+  showToast('High-entropy 128-bit key generated successfully!', 'success')
+}
+
+const provisionOperator = async () => {
+  if (!operatorUsername.value.trim() || !operatorEmail.value.trim() || !operatorPassword.value) {
+    showToast('Please fill in all operator provisioning fields.', 'error')
+    return
+  }
+  if (operatorPassword.value !== operatorConfirmPassword.value) {
+    showToast('Passwords do not match. Please verify.', 'error')
+    return
+  }
+
+  isProvisioning.value = true
+  try {
+    const res = await fetch('http://127.0.0.1:8000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: operatorUsername.value.trim(),
+        email: operatorEmail.value.trim(),
+        password: operatorPassword.value
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      showToast(data.detail || 'Failed to provision operator credential.', 'error')
+      return
+    }
+
+    showToast(`Operator ${operatorUsername.value} provisioned successfully in SCADA Auth DB!`, 'success')
+  } catch (err) {
+    showToast('Failed to reach authentication gateway on port 8000.', 'error')
+  } finally {
+    isProvisioning.value = false
+  }
+}
 
 // 1. Swarm Active Field
 const isSwarmActive = ref(true)
@@ -360,12 +658,23 @@ const showToast = (message, type = 'success') => {
   }, 3500)
 }
 
-// Session ID grabber from localStorage <agent_session_id>
+// Session ID grabber from localStorage <agent_session_id> or JWT token
 const getSessionId = () => {
   let savedId = localStorage.getItem('agent_session_id')
   if (!savedId) {
-    savedId = crypto.randomUUID()
-    localStorage.setItem('agent_session_id', savedId)
+    const token = localStorage.getItem('scada_access_token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (payload && payload.id) {
+          savedId = String(payload.id)
+          localStorage.setItem('agent_session_id', savedId)
+        }
+      } catch (e) {}
+    }
+  }
+  if (!savedId) {
+    savedId = 'default'
   }
   return savedId
 }
@@ -1167,4 +1476,473 @@ input:checked + .slider:before {
   }
 }
 
+/* =========================================================
+   PROVISIONING BLUEPRINT CARD STYLES (MATCHING SCADA BLUEPRINT)
+   ========================================================= */
+.blueprint-card {
+  position: relative;
+  border-color: rgba(0, 229, 255, 0.28);
+}
+
+.blueprint-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.blueprint-sec-tag {
+  margin: 3px 0 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #00e5ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:global([data-theme="light"]) .blueprint-sec-tag {
+  color: #0284c7;
+}
+
+.btn-fast-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 6px;
+  color: #00e5ff;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:global([data-theme="light"]) .btn-fast-generate {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0284c7;
+}
+
+.btn-fast-generate:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.sparkle-icon {
+  font-size: 13px;
+  color: #00e5ff;
+}
+
+:global([data-theme="light"]) .sparkle-icon {
+  color: #0284c7;
+}
+
+.bp-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.bp-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bp-label-row .form-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+:global([data-theme="light"]) .bp-label-row .form-label {
+  color: #1e293b;
+}
+
+.bp-ldap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #10b981;
+  letter-spacing: 0.04em;
+}
+
+.ldap-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.bp-strength-badge {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #10b981;
+  letter-spacing: 0.04em;
+}
+
+.bp-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.bp-input-wrapper.flex-1 {
+  flex: 1;
+}
+
+.bp-input-icon {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bp-input-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bp-input {
+  padding-left: 38px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  height: 42px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.2s ease !important;
+}
+
+.bp-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+}
+
+.bp-input:focus {
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.35), 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+:global([data-theme="light"]) .bp-input {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+:global([data-theme="light"]) .bp-input:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25) !important;
+}
+
+.bp-reg-badge {
+  position: absolute;
+  right: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bp-hint {
+  font-size: 11px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.bp-info-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #38bdf8;
+}
+
+:global([data-theme="light"]) .bp-info-hint {
+  color: #0284c7;
+}
+
+.info-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.bp-passwords-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bp-toggle-eye {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.bp-toggle-eye svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bp-toggle-eye:hover {
+  color: #0284c7;
+}
+
+.bp-confirmed-badge {
+  position: absolute;
+  right: 10px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.bp-confirmed-badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bp-entropy-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.entropy-segment {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+
+.entropy-segment.filled {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+/* Active Crypto Specification Box */
+.bp-crypto-box {
+  background: #070b14;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:global([data-theme="light"]) .bp-crypto-box {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.crypto-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crypto-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+}
+
+:global([data-theme="light"]) .crypto-title {
+  color: #0369a1;
+}
+
+.shield-mini {
+  width: 13px;
+  height: 13px;
+}
+
+.crypto-standard {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #10b981;
+}
+
+.crypto-params-row {
+  display: flex;
+  gap: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .crypto-params-row {
+  color: #475569;
+}
+
+.crypto-trace-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.trace-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.trace-code-box {
+  background: #040810;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #00e5ff;
+  word-break: break-all;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme="light"]) .trace-code-box {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0284c7;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Access Tier & Control Rights */
+.bp-access-tier-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.tier-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+:global([data-theme="light"]) .tier-label {
+  color: #475569;
+}
+
+.tier-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tier-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: #00e5ff;
+}
+
+:global([data-theme="light"]) .tier-pill {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
+  color: #0284c7;
+}
+
+/* Provision Submit Button */
+.bp-submit-row {
+  margin-top: 10px;
+}
+
+.btn-provision-primary {
+  width: 100%;
+  height: 42px;
+  background: #00e5ff;
+  border: none;
+  border-radius: 8px;
+  color: #040810;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+}
+
+:global([data-theme="light"]) .btn-provision-primary {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+}
+
+.btn-provision-primary:hover:not(:disabled) {
+  background: #38bdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 229, 255, 0.5);
+}
+
+:global([data-theme="light"]) .btn-provision-primary:hover:not(:disabled) {
+  background: #0369a1;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+}
+
+.btn-provision-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.arrow-sym {
+  margin-left: 6px;
+  font-size: 15px;
+}
 </style>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 import asyncio
 import queue
@@ -10,14 +10,16 @@ from agent_folder.manager import MANAGER_TOOLS_SCHEMA, get_manager_tools
 from agent_folder.agent import run_agent
 from database.database import load_history, save_history
 from api.state import approval_events, approval_results
+from api.auth import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/api/chat")
-async def chat_endpoint(prompt: str, session_id: str):
+async def chat_endpoint(prompt: str, current_user: dict = Depends(get_current_user)):
     # Create a thread-safe queue to hold our messages
     message_queue = queue.Queue()
+    session_id = str(current_user["user_id"])
 
     # Task emitter for the left-side execution panel
     def agent_task_emitter(task_event):
@@ -66,6 +68,14 @@ async def chat_endpoint(prompt: str, session_id: str):
                 task_emitter=agent_task_emitter,
                 session_id=session_id
             )
+
+            # Ensure the final agent answer is always recorded in the session history
+            last_msg = updated_history[-1] if updated_history else None
+            last_role = last_msg.get("role") if isinstance(last_msg, dict) else getattr(last_msg, "role", None)
+            last_content = last_msg.get("content") if isinstance(last_msg, dict) else getattr(last_msg, "content", None)
+
+            if not updated_history or last_role != "assistant" or not last_content:
+                updated_history.append({"role": "assistant", "content": answer})
 
             save_history(session_id, updated_history)
 

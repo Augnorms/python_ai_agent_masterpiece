@@ -64,14 +64,31 @@
         <span class="notification-indicator"></span>
       </button>
 
-      <!-- User Avatar -->
-      <div class="user-profile">
-        <div class="user-avatar">
+      <!-- Operator Profile & Logout Action -->
+      <div class="operator-profile-box">
+        <div class="user-avatar is-auth" :title="`Authenticated Operator: ${currentOperator || 'SCADA Operator'}`">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
         </div>
+        <div class="operator-info-col">
+          <span class="operator-name">{{ currentOperator || 'op_sysadmin' }}</span>
+        </div>
+        <button
+          type="button"
+          class="btn-header-logout"
+          @click="handleLogout"
+          title="Sign out of SCADA Gateway"
+          aria-label="Logout"
+        >
+          <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span class="logout-text">Logout</span>
+        </button>
       </div>
     </div>
   </header>
@@ -79,17 +96,69 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { useDialog } from '../composables/useDialog'
 
+const router = useRouter()
 const route = useRoute()
+const dialog = useDialog()
 const isDark = ref(true)
 const isSwarmActive = ref(true)
 const swarmMode = ref('autonomous')
 const region = ref('Ghana-Accra')
 const model = ref('openai/gpt-oss-120b')
 
+// Auth state
+const currentOperator = ref('')
+
+const checkAuth = () => {
+  const token = localStorage.getItem('scada_access_token')
+  const userJson = localStorage.getItem('scada_user')
+  if (token && userJson) {
+    try {
+      const user = JSON.parse(userJson)
+      currentOperator.value = user.username || ''
+    } catch {
+      currentOperator.value = ''
+    }
+  } else {
+    currentOperator.value = ''
+  }
+}
+
+const handleLogout = async () => {
+  const confirmed = await dialog.confirm(
+    `Sign out operator "${currentOperator.value || 'current'}" from this SCADA station?`,
+    'Station Logout Confirmation',
+    'Sign Out',
+    'Cancel'
+  )
+  if (confirmed) {
+    localStorage.removeItem('scada_access_token')
+    localStorage.removeItem('scada_user')
+    localStorage.removeItem("scada_station_operator")
+    currentOperator.value = ''
+    window.dispatchEvent(new CustomEvent('auth-changed', { detail: { isAuthenticated: false } }))
+    router.push('/login')
+  }
+}
+
+const onLoginSuccess = (data) => {
+  currentOperator.value = data.user?.username || ''
+}
+
 const getSessionId = () => {
-  return localStorage.getItem('agent_session_id') || 'default'
+  let savedId = localStorage.getItem('agent_session_id')
+  if (!savedId) {
+    const token = localStorage.getItem('scada_access_token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (payload && payload.id) savedId = String(payload.id)
+      } catch (e) {}
+    }
+  }
+  return savedId || 'default'
 }
 
 const fetchSettings = async () => {
@@ -151,14 +220,18 @@ onMounted(() => {
   isDark.value = savedTheme === 'dark'
   document.documentElement.setAttribute('data-theme', savedTheme)
 
+  checkAuth()
   fetchSettings()
   window.addEventListener('swarm-settings-updated', handleSettingsUpdated)
   window.addEventListener('storage', fetchSettings)
+  window.addEventListener('auth-changed', checkAuth)
+  window.addEventListener('open-login-modal', () => { isLoginModalOpen.value = true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('swarm-settings-updated', handleSettingsUpdated)
   window.removeEventListener('storage', fetchSettings)
+  window.removeEventListener('auth-changed', checkAuth)
 })
 </script>
 
@@ -315,9 +388,94 @@ onUnmounted(() => {
   box-shadow: 0 0 6px var(--primary-cyan);
 }
 
-.user-profile {
-  margin-left: 4px;
+.operator-profile-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.operator-profile-box:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.operator-info-col {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.operator-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:global([data-theme="light"]) .operator-name {
+  color: #0f172a;
+}
+
+.operator-role-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--primary-cyan);
+  letter-spacing: 0.05em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.btn-header-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 6px;
+  color: #f87171;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  transition: all 0.15s ease;
+  margin-left: 6px;
+}
+
+:global([data-theme="light"]) .btn-header-logout {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #dc2626;
+}
+
+.btn-header-logout:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #fca5a5;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+:global([data-theme="light"]) .btn-header-logout:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+
+.logout-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.logout-text {
+  font-size: 11px;
+}
+
+.user-avatar.is-auth {
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 .user-avatar {

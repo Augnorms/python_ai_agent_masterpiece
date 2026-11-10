@@ -16,7 +16,9 @@ from api import (
     get_live_prediction,
     run_palnt_agent,
     emergency_stop,
-    resume_plant
+    resume_plant,
+    register,
+    login
 )
 
 app = FastAPI()
@@ -46,3 +48,5 @@ app.include_router(get_live_prediction)
 app.include_router(run_palnt_agent)
 app.include_router(emergency_stop)
 app.include_router(resume_plant)
+app.include_router(register)
+app.include_router(login)

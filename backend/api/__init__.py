@@ -13,6 +13,9 @@ from api.predict import router as get_live_prediction
 from api.auto_plant_agent import router as run_palnt_agent
 from api.api_emergency_stop_resume import router as emergency_stop
 from api.api_emergency_stop_resume import router as resume_plant
+from api.auth import router as register
+from api.auth import router as login
+
 
 __all__ = [
     "chat_router",
@@ -29,5 +32,7 @@ __all__ = [
     "get_live_prediction",
     "run_palnt_agent",
     "emergency_stop",
-    "resume_plant"
+    "resume_plant",
+    "register",
+    "login"
 ]
