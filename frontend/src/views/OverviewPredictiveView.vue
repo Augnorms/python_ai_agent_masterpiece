@@ -446,7 +446,7 @@
                 <span class="cot-steps-tag font-mono">{{ cotStepsTag }}</span>
               </div>
 
-              <div class="cot-stream font-mono">
+              <div class="cot-stream font-mono" ref="cotStreamRef">
                 <div v-if="isAgentRunning && (!reasoningSteps || reasoningSteps.length === 0)" class="cot-line highlight">
                   <span class="cot-prefix">›</span>
                   <span class="cot-text">Autonomous Diagnostic Engine evaluating live telemetry against SOP guidelines...</span>
@@ -844,15 +844,29 @@ const cotStepsTag = computed(() => {
   return `${reasoningSteps.value.length} STEPS`
 })
 
+const cotStreamRef = ref(null)
+
+const scrollCotToBottom = async () => {
+  await nextTick()
+  if (cotStreamRef.value) {
+    cotStreamRef.value.scrollTop = cotStreamRef.value.scrollHeight
+  }
+}
+
+watch(reasoningSteps, () => {
+  scrollCotToBottom()
+}, { deep: true })
+
 const cycleStatText = computed(() => {
   return `Flow: ${cycleFlow.value} m³/h | TDS: ${cycleTds.value} ppm (${cycleQuality.value})`
 })
 
-// Trigger Auto-Run from backend
+// Trigger Auto-Run from backend via SSE Streaming
 const triggerAutoRun = async (isManual = false) => {
   if (isAgentRunning.value || eStopActive.value) return
   if (!isManual && !isAutonomousAgentEnabled.value) return
   isAgentRunning.value = true
+  reasoningSteps.value = []
 
   try {
     const token = localStorage.getItem('scada_access_token')
@@ -865,76 +879,116 @@ const triggerAutoRun = async (isManual = false) => {
     })
     
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const json = await response.json()
+    if (!response.body) throw new Error('ReadableStream not supported')
 
-    if (json.status === 'success') {
-      cycleNumber.value = json.cycle_number || (cycleNumber.value + 1)
-      diagnosticReport.value = json.diagnostic_report || ''
-      
-      const nowStr = json.timestamp || new Date().toLocaleTimeString()
-      cycleTimestamp.value = nowStr
-      lastReportTime.value = `CYCLE #${cycleNumber.value} (${nowStr})`
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
 
-      if (json.live_inputs) {
-        if (json.live_inputs.flow !== undefined) cycleFlow.value = json.live_inputs.flow
-        if (json.live_inputs.tds !== undefined) cycleTds.value = json.live_inputs.tds
-        if (json.live_inputs.quality !== undefined) cycleQuality.value = json.live_inputs.quality
-      }
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-      // Update reasoning steps
-      if (Array.isArray(json.reasoning_steps) && json.reasoning_steps.length > 0) {
-        reasoningSteps.value = json.reasoning_steps
-      } else {
-        reasoningSteps.value = [
-          `[INGEST] Telemetry verified: Flow=${cycleFlow.value} m³/h, TDS=${cycleTds.value} ppm (${cycleQuality.value})`,
-          `[SOP] Cross-checked Vikings_Desalination_Plant_SOP.docx against active parameters`,
-          `[STATUS] Autonomous supervisor cycle evaluation verified`
-        ]
-      }
+      buffer += decoder.decode(value, { stream: true })
+      const parts = buffer.split('\n\n')
+      buffer = parts.pop() || ''
 
-      // Health & Badges based on quality
-      const q = (cycleQuality.value || '').toLowerCase()
-      if (q === 'good' || q === 'excellent') {
-        plantHealth.value = 'OPTIMAL'
-        plantHealthDotClass.value = ''
-        lastReportBadge.value = 'GRADE A - SOP OK'
-        lastReportBadgeClass.value = 'green'
-        cycleAlerts.value = 0
-        cycleActionTag.value = 'VERIFIED NORMAL'
-        cycleTagClass.value = 'green'
-      } else if (q === 'warning') {
-        plantHealth.value = 'WARNING'
-        plantHealthDotClass.value = 'dot-warn'
-        lastReportBadge.value = 'DOSING ADJUSTMENT'
-        lastReportBadgeClass.value = 'amber'
-        cycleAlerts.value = 1
-        cycleActionTag.value = 'DOSING CHECK'
-        cycleTagClass.value = 'amber'
-      } else {
-        plantHealth.value = 'DEGRADED'
-        plantHealthDotClass.value = 'dot-danger'
-        lastReportBadge.value = 'POOR - ACTION REQUIRED'
-        lastReportBadgeClass.value = 'red'
-        cycleAlerts.value = 2
-        cycleActionTag.value = 'CORRECTIVE ACTION'
-        cycleTagClass.value = 'red'
-      }
-      scadaLinkStatus.value = 'CONNECTED (PORT 502)'
-    } else {
-      // Plant error (e.g. PLC disconnected)
-      scadaLinkStatus.value = 'PLC DISCONNECTED'
-      plantHealth.value = 'OFFLINE'
-      plantHealthDotClass.value = 'dot-danger'
-      lastReportBadge.value = 'PLC DISCONNECTED'
-      lastReportBadgeClass.value = 'red'
-      cycleAlerts.value = 1
-      cycleActionTag.value = 'LINK RECONNECT'
-      cycleTagClass.value = 'red'
-      if (json.message) {
-        diagnosticReport.value = `[STATUS] ${json.message}`
+      for (const part of parts) {
+        const trimmed = part.trim()
+        if (!trimmed.startsWith('data: ')) continue
+
+        const raw = trimmed.slice(6)
+        let payload
+        try {
+          payload = JSON.parse(raw)
+        } catch {
+          continue
+        }
+
+        if (!payload || !payload.type) continue
+
+        // 1. Initial snapshot event
+        if (payload.type === 'init' && payload.data) {
+          if (payload.data.flow !== undefined) cycleFlow.value = payload.data.flow
+          if (payload.data.tds !== undefined) cycleTds.value = payload.data.tds
+          if (payload.data.quality !== undefined) cycleQuality.value = payload.data.quality
+          if (payload.data.cycle_number !== undefined) {
+            cycleNumber.value = payload.data.cycle_number
+            lastReportTime.value = `CYCLE #${payload.data.cycle_number} (${payload.data.timestamp || new Date().toLocaleTimeString()})`
+          }
+        }
+        // 2. Live Chain-of-Thought reasoning steps
+        else if (payload.type === 'step') {
+          reasoningSteps.value.push(payload.data)
+          scrollCotToBottom()
+        }
+        // 3. Final execution result
+        else if (payload.type === 'result') {
+          const json = payload.data
+          cycleNumber.value = json.cycle_number || cycleNumber.value
+          diagnosticReport.value = json.diagnostic_report || ''
+          
+          const nowStr = json.timestamp || new Date().toLocaleTimeString()
+          cycleTimestamp.value = nowStr
+          lastReportTime.value = `CYCLE #${cycleNumber.value} (${nowStr})`
+
+          if (json.live_inputs) {
+            if (json.live_inputs.flow !== undefined) cycleFlow.value = json.live_inputs.flow
+            if (json.live_inputs.tds !== undefined) cycleTds.value = json.live_inputs.tds
+            if (json.live_inputs.quality !== undefined) cycleQuality.value = json.live_inputs.quality
+          }
+
+          if (Array.isArray(json.reasoning_steps) && json.reasoning_steps.length > 0) {
+            reasoningSteps.value = json.reasoning_steps
+          }
+
+          // Health & Badges based on quality
+          const q = (cycleQuality.value || '').toLowerCase()
+          if (q === 'good' || q === 'excellent') {
+            plantHealth.value = 'OPTIMAL'
+            plantHealthDotClass.value = ''
+            lastReportBadge.value = 'GRADE A - SOP OK'
+            lastReportBadgeClass.value = 'green'
+            cycleAlerts.value = 0
+            cycleActionTag.value = 'VERIFIED NORMAL'
+            cycleTagClass.value = 'green'
+          } else if (q === 'warning') {
+            plantHealth.value = 'WARNING'
+            plantHealthDotClass.value = 'dot-warn'
+            lastReportBadge.value = 'DOSING ADJUSTMENT'
+            lastReportBadgeClass.value = 'amber'
+            cycleAlerts.value = 1
+            cycleActionTag.value = 'DOSING CHECK'
+            cycleTagClass.value = 'amber'
+          } else {
+            plantHealth.value = 'DEGRADED'
+            plantHealthDotClass.value = 'dot-danger'
+            lastReportBadge.value = 'POOR - ACTION REQUIRED'
+            lastReportBadgeClass.value = 'red'
+            cycleAlerts.value = 2
+            cycleActionTag.value = 'CORRECTIVE ACTION'
+            cycleTagClass.value = 'red'
+          }
+          scadaLinkStatus.value = 'CONNECTED (PORT 502)'
+        }
+        // 4. Plant/PLC error event
+        else if (payload.type === 'error') {
+          scadaLinkStatus.value = 'PLC DISCONNECTED'
+          plantHealth.value = 'OFFLINE'
+          plantHealthDotClass.value = 'dot-danger'
+          lastReportBadge.value = 'PLC DISCONNECTED'
+          lastReportBadgeClass.value = 'red'
+          cycleAlerts.value = 1
+          cycleActionTag.value = 'LINK RECONNECT'
+          cycleTagClass.value = 'red'
+          if (payload.data && payload.data.message) {
+            diagnosticReport.value = `[STATUS] ${payload.data.message}`
+          }
+        }
       }
     }
   } catch (err) {
+    console.error('SSE auto-run error:', err)
     scadaLinkStatus.value = 'NETWORK INTERRUPTION'
   } finally {
     isAgentRunning.value = false
@@ -2190,6 +2244,30 @@ onUnmounted(() => {
   gap: 4px;
   font-size: 9.5px;
   line-height: 1.4;
+  max-height: 140px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.35) rgba(15, 23, 42, 0.5);
+}
+
+.cot-stream::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cot-stream::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.cot-stream::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.35);
+  border-radius: 4px;
+}
+
+.cot-stream::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.7);
 }
 
 .cot-line {
@@ -3031,6 +3109,22 @@ onUnmounted(() => {
   color: #64748b !important;
 }
 
+[data-theme="light"] .cot-stream {
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 [data-theme="light"] .cot-line {
   color: #475569 !important;
 }
@@ -3620,6 +3714,22 @@ onUnmounted(() => {
 
 [data-theme="light"] .cot-steps-tag {
   color: #64748b !important;
+}
+
+[data-theme="light"] .cot-stream {
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] .cot-stream::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 [data-theme="light"] .cot-line {
