@@ -77,7 +77,7 @@ async def login(user: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
         
     # 3. Generate JWT
-    token = create_access_token({"sub": db_user["username"], "id": db_user["id"]})
+    token = create_access_token({"sub": db_user["username"], "id": db_user["id"], "email": db_user["email"]})
     
     return {
         "status": "success",
@@ -104,6 +104,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
         if username is None or user_id is None:
             raise credentials_exception
-        return {"username": username, "user_id": user_id, "email":email}
+
+        if not email:
+            db_user = get_auth_user_by_username(username)
+            if db_user:
+                email = db_user.get("email")
+
+        return {"username": username, "user_id": user_id, "email": email or ""}
     except JWTError:
         raise credentials_exception

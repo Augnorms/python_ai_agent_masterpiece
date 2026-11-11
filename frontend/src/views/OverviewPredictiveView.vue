@@ -683,7 +683,7 @@ const countdownText = ref(`${initMins}m ${String(initSecs).padStart(2, '0')}s`)
 let countdownTimer = null
 
 // ─── Backend API Base URL ───────────────────────────────────────
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://127.0.0.1:8000'
 
 // Equipment States
 const pumpP101 = ref(true)
@@ -855,9 +855,13 @@ const triggerAutoRun = async (isManual = false) => {
   isAgentRunning.value = true
 
   try {
+    const token = localStorage.getItem('scada_access_token')
     const response = await fetch(`${API_BASE}/api/agent/auto-run`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     })
     
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
@@ -1005,9 +1009,13 @@ const handleEmergencyStop = async () => {
   const endpoint = eStopActive.value ? '/api/plant/resume' : '/api/plant/emergency-stop'
 
   try {
+    const token = localStorage.getItem('scada_access_token')
     const response = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     })
     const json = await response.json()
 
