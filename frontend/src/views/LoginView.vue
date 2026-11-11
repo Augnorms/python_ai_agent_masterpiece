@@ -235,7 +235,7 @@ import { useDialog } from '../composables/useDialog'
 const router = useRouter()
 const dialog = useDialog()
 
-const username = ref('op_sysadmin_04')
+const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const rememberStation = ref(true)

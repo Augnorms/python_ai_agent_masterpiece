@@ -427,34 +427,6 @@
               </div>
             </div>
 
-            <!-- Active Crypto Specification Card -->
-            <div class="bp-crypto-box">
-              <div class="crypto-header-line">
-                <div class="crypto-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shield-mini">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  <span>ACTIVE CRYPTO SPECIFICATION:</span>
-                </div>
-                <span class="crypto-standard">ARGON2ID (RFC 9106)</span>
-              </div>
-
-              <div class="crypto-params-row">
-                <span>MEM: 64 MiB (m=65536)</span>
-                <span>PASSES: t=3 iterations</span>
-                <span>THREADS: p=4 lanes</span>
-              </div>
-
-              <div class="crypto-trace-preview">
-                <span class="trace-label">SYNTHETIC COMPUTED HASH TRACE PREVIEW:</span>
-                <div class="trace-code-box">
-                  {{ computedHashTrace }}
-                </div>
-              </div>
-            </div>
-
             <!-- Operational Access Tier & Control Rights -->
             <div class="bp-access-tier-box">
               <span class="tier-label">Operational Access Tier &amp; Control Rights:</span>
@@ -532,10 +504,10 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 
 // SCADA Operator Provisioning Blueprint State
-const operatorUsername = ref('op_arun_88')
-const operatorEmail = ref('a.run@aquasync-desal.internal')
-const operatorPassword = ref('AquaSync#2026!Secured')
-const operatorConfirmPassword = ref('AquaSync#2026!Secured')
+const operatorUsername = ref('')
+const operatorEmail = ref('')
+const operatorPassword = ref('')
+const operatorConfirmPassword = ref('')
 const showBpPassword = ref(false)
 const isProvisioning = ref(false)
 
@@ -595,6 +567,9 @@ const provisionOperator = async () => {
 
     if (!res.ok) {
       showToast(data.detail || 'Failed to provision operator credential.', 'error')
+      operatorUsername.value = ""
+      operatorEmail.value = ""
+      operatorPassword.value = ""
       return
     }
 

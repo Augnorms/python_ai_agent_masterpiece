@@ -23,7 +23,7 @@ cycle_counter = 142
 def get_last_agent_run():
     return last_agent_run
 
-def trigger_agent_run():
+def trigger_agent_run(recipient_email: str):
     global cycle_counter, last_agent_run, _is_running
 
     # Guard against multiple concurrent agent executions
@@ -52,7 +52,7 @@ def trigger_agent_run():
             quality = live_data["predictions"]["beta"]["quality_status"]
 
             # 2. Create the autonomous prompt using the live numbers
-            recipient_email = "augustinenormanyo98@gmail.com"
+            recipient_email = recipient_email
             prompt = (
                 f"You are the autonomous plant supervisor for SWRO Plant #04.\n"
                 f"Live Telemetry Snapshot: Flow={flow} m3/h, TDS={tds} ppm, Water Quality={quality}.\n\n"

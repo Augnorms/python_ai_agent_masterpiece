@@ -153,14 +153,14 @@
 
             <!-- User Bubble -->
             <div v-if="msg.role === 'user'" class="user-bubble-card">
-              <div class="user-avatar-small">
+              <div class="user-avatar-small" :title="loggedInUsername ? `Operator: ${loggedInUsername}` : 'Operator'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
               <div class="user-content">
-                <span class="author-tag">User (You)</span>
+                <span class="author-tag">{{ loggedInUsername ? `${loggedInUsername} (You)` : 'User (You)' }}</span>
                 <p class="user-text">{{ msg.text }}</p>
               </div>
             </div>
@@ -294,12 +294,31 @@ const messages = ref([])
 const isLoading = ref(false)
 const isClearingMemory = ref(false)
 const sessionId = ref('default')
+const loggedInUsername = ref('')
 const pendingApproval = ref(null)
 const chatBoxRef = ref(null)
 const taskLifecycle = ref([])
 const latency = ref(0)
 const successRate = ref(0)
 const taskDurations = ref([])
+
+const getLoggedInUsername = () => {
+  const userJson = localStorage.getItem('scada_user')
+  if (userJson) {
+    try {
+      const u = JSON.parse(userJson)
+      if (u && u.username) return u.username
+    } catch {}
+  }
+  const token = localStorage.getItem('scada_access_token')
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload && payload.sub) return payload.sub
+    } catch {}
+  }
+  return localStorage.getItem('scada_station_operator') || ''
+}
 
 const getUserSessionId = () => {
   const token = localStorage.getItem('scada_access_token')
@@ -331,6 +350,11 @@ const scrollToBottom = async () => {
 }
 
 onMounted(async () => {
+  loggedInUsername.value = getLoggedInUsername()
+  window.addEventListener('auth-changed', () => {
+    loggedInUsername.value = getLoggedInUsername()
+  })
+
   const currentSid = getUserSessionId()
   sessionId.value = currentSid
   localStorage.setItem('agent_session_id', currentSid)

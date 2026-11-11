@@ -65,17 +65,20 @@
       </button>
 
       <!-- Operator Profile & Logout Action -->
-      <div class="operator-profile-box">
-        <div class="user-avatar is-auth" :title="`Authenticated Operator: ${currentOperator || 'SCADA Operator'}`">
+      <div class="operator-profile-box" :title="currentOperator ? `Logged in Operator: ${currentOperator}` : 'Unauthenticated'">
+        <div class="user-avatar" :class="{ 'is-auth': !!currentOperator }">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
+          <span v-if="currentOperator" class="avatar-online-dot" title="Operator Authenticated"></span>
         </div>
         <div class="operator-info-col">
-          <span class="operator-name">{{ currentOperator || 'op_sysadmin' }}</span>
+          <span class="operator-name">{{ currentOperator || 'Guest Operator' }}</span>
+          <span class="operator-role-tag">{{ currentOperator ? 'SCADA OPERATOR' : 'OFFLINE' }}</span>
         </div>
         <button
+          v-if="currentOperator"
           type="button"
           class="btn-header-logout"
           @click="handleLogout"
@@ -111,19 +114,35 @@ const model = ref('openai/gpt-oss-120b')
 // Auth state
 const currentOperator = ref('')
 
-const checkAuth = () => {
+const checkAuth = (event) => {
+  if (event && event.detail && event.detail.user && event.detail.user.username) {
+    currentOperator.value = event.detail.user.username
+    return
+  }
+
   const token = localStorage.getItem('scada_access_token')
+  let username = ''
+
   const userJson = localStorage.getItem('scada_user')
-  if (token && userJson) {
+  if (userJson) {
     try {
       const user = JSON.parse(userJson)
-      currentOperator.value = user.username || ''
-    } catch {
-      currentOperator.value = ''
-    }
-  } else {
-    currentOperator.value = ''
+      if (user && user.username) username = user.username
+    } catch {}
   }
+
+  if (!username && token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload && payload.sub) username = payload.sub
+    } catch {}
+  }
+
+  if (!username) {
+    username = localStorage.getItem('scada_station_operator') || ''
+  }
+
+  currentOperator.value = username
 }
 
 const handleLogout = async () => {
@@ -137,6 +156,7 @@ const handleLogout = async () => {
     localStorage.removeItem('scada_access_token')
     localStorage.removeItem('scada_user')
     localStorage.removeItem("scada_station_operator")
+    localStorage.removeItem("agent_session_id")
     currentOperator.value = ''
     window.dispatchEvent(new CustomEvent('auth-changed', { detail: { isAuthenticated: false } }))
     router.push('/login')
@@ -210,8 +230,9 @@ const toggleTheme = () => {
   localStorage.setItem('theme', theme)
 }
 
-// Watch route navigation so changing pages always reflects current settings
+// Watch route navigation so changing pages always reflects current operator and settings
 watch(() => route.path, () => {
+  checkAuth()
   fetchSettings()
 })
 
@@ -223,14 +244,15 @@ onMounted(() => {
   checkAuth()
   fetchSettings()
   window.addEventListener('swarm-settings-updated', handleSettingsUpdated)
-  window.addEventListener('storage', fetchSettings)
+  window.addEventListener('storage', () => {
+    checkAuth()
+    fetchSettings()
+  })
   window.addEventListener('auth-changed', checkAuth)
-  window.addEventListener('open-login-modal', () => { isLoginModalOpen.value = true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('swarm-settings-updated', handleSettingsUpdated)
-  window.removeEventListener('storage', fetchSettings)
   window.removeEventListener('auth-changed', checkAuth)
 })
 </script>
@@ -391,40 +413,55 @@ onUnmounted(() => {
 .operator-profile-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 6px;
+  gap: 10px;
+  padding: 4px 10px;
   border-radius: 8px;
-  cursor: pointer;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
   transition: all 0.2s ease;
 }
 
+:global([data-theme="light"]) .operator-profile-box {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
 .operator-profile-box:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(14, 165, 233, 0.14);
+}
+
+:global([data-theme="light"]) .operator-profile-box:hover {
+  background: #e2e8f0;
 }
 
 .operator-info-col {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .operator-name {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #fff;
+  color: #38bdf8;
+  letter-spacing: 0.02em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :global([data-theme="light"]) .operator-name {
-  color: #0f172a;
+  color: #0284c7;
 }
 
 .operator-role-tag {
   font-size: 9px;
   font-weight: 700;
-  color: var(--primary-cyan);
-  letter-spacing: 0.05em;
+  color: #10b981;
+  letter-spacing: 0.06em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:global([data-theme="light"]) .operator-role-tag {
+  color: #059669;
 }
 
 .btn-header-logout {
@@ -475,26 +512,44 @@ onUnmounted(() => {
 .user-avatar.is-auth {
   border-color: #10b981;
   color: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
 }
 
 .user-avatar {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(0, 229, 255, 0.15);
+  background: rgba(0, 229, 255, 0.12);
   border: 1.5px solid var(--primary-cyan);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary-cyan);
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
   transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.avatar-online-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  background: #10b981;
+  border: 2px solid #060b13;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+}
+
+:global([data-theme="light"]) .avatar-online-dot {
+  border-color: #ffffff;
 }
 
 .user-avatar svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .user-avatar:hover {
