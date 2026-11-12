@@ -4,10 +4,15 @@ import asyncio
 import queue
 import json
 
-from auto_agent_service import trigger_agent_run, get_last_agent_run
+from auto_agent_service import trigger_agent_run, get_last_agent_run, cancel_agent_run
 from api.auth import get_current_user
 
 router = APIRouter()
+
+@router.post("/api/agent/terminate")
+async def terminate_agent():
+    return cancel_agent_run()
+    
 
 @router.api_route("/api/agent/auto-run", methods=["GET", "POST"])
 async def run_plant_agent(run_now: bool = Query(True), current_user: dict = Depends(get_current_user)):
@@ -17,9 +22,7 @@ async def run_plant_agent(run_now: bool = Query(True), current_user: dict = Depe
         user_email = f"{username}@aquasync-desal.internal"
 
     if not run_now:
-        last = get_last_agent_run()
-        if last.get("diagnostic_report"):
-            return last
+        return get_last_agent_run()
 
     # Create thread-safe queue for SSE message passing
     message_queue = queue.Queue()

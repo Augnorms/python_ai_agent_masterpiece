@@ -8,6 +8,7 @@ from agent_folder.tools import send_email
 
 _agent_execution_lock = threading.Lock()
 _is_running = False
+_cancel_requested = False
 
 # In-memory cache for the most recent agent execution
 last_agent_run = {
@@ -24,8 +25,15 @@ cycle_counter = 142
 def get_last_agent_run():
     return last_agent_run
 
+def cancel_agent_run():
+    global _is_running, _cancel_requested
+    _cancel_requested = True
+    _is_running = False
+    return {"status": "success", "message": "Agent execution terminated"}
+
 def trigger_agent_run(recipient_email: str, stream_queue: queue.Queue = None):
-    global cycle_counter, last_agent_run, _is_running
+    global cycle_counter, last_agent_run, _is_running, _cancel_requested
+    _cancel_requested = False
 
     # Guard against multiple concurrent agent executions
     if _is_running:
@@ -89,11 +97,16 @@ def trigger_agent_run(recipient_email: str, stream_queue: queue.Queue = None):
                 stream_queue.put({"type": "step", "data": init_log_2})
 
             def agent_logger(msg):
+                if _cancel_requested:
+                    raise RuntimeError("Agent execution terminated by operator.")
                 msg_str = str(msg)
                 logs.append(msg_str)
                 if stream_queue:
                     stream_queue.put({"type": "step", "data": msg_str})
             
+            if _cancel_requested:
+                raise RuntimeError("Agent execution terminated by operator.")
+
             answer, trace = run_agent(
                 prompt, 
                 [], 
@@ -102,6 +115,9 @@ def trigger_agent_run(recipient_email: str, stream_queue: queue.Queue = None):
                 logger=agent_logger, 
                 use_guardrails=True
             )
+
+            if _cancel_requested:
+                raise RuntimeError("Agent execution terminated by operator.")
 
             # 4. Guarantee email delivery: check if email was dispatched during the agent run
             email_already_sent = any("Routing to Email Agent" in str(l) or "Email successfully sent" in str(l) for l in logs)
@@ -136,6 +152,17 @@ def trigger_agent_run(recipient_email: str, stream_queue: queue.Queue = None):
                 stream_queue.put({"type": "result", "data": result})
             return result
         except Exception as e:
+            if _cancel_requested:
+                err_data = {
+                    "status": "terminated",
+                    "message": "Execution terminated by operator",
+                    "cycle_number": cycle_counter,
+                    "timestamp": datetime.now().strftime("%H:%M:%S")
+                }
+                if stream_queue:
+                    stream_queue.put({"type": "terminated", "data": err_data})
+                return err_data
+
             err_data = {
                 "status": "error",
                 "message": str(e),
@@ -147,6 +174,7 @@ def trigger_agent_run(recipient_email: str, stream_queue: queue.Queue = None):
             return err_data
         finally:
             _is_running = False
+            _cancel_requested = False
             if stream_queue:
                 stream_queue.put(None)
 
